@@ -1,16 +1,19 @@
 /*
 
-	CRT - Guest - NTSC (Copyright (C) 2018-2024 guest(r) - guest.r@gmail.com)
+	CRT - Guest - NTSC
+
+	Copyright (C) 2018-2025 guest(r)
 
 	Incorporates many good ideas and suggestions from Dr. Venom.
 
-	I would also like give thanks to many Libretro forums members for continuous feedbacks, suggestions and caring about the shader.
+	I would also like give thanks to many Libretro forums members for continuous feedback, suggestions and using the shader.
 
 	This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
-	This program is distributed in the hopes that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+	without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License along with this program; if not,
 	write to the Free Software Foundation, Inc, 59 Temple Place - STE 330, Boston, MA 02111-1307, USA.
@@ -19,13 +22,13 @@
 
 */
 
-uniform float quality <
+uniform float internal_res <
 	ui_type = "drag";
-	ui_min = 0.0;
-	ui_max = 0.0;
-	ui_step = 1.0;
-	ui_label = "Values (Info Only): SVideo = 0 | Composite = 1.0 | RF = 2.0";
-> = 0.0;
+	ui_min = 0.5;
+	ui_max = 8.0;
+	ui_step = 0.1;
+	ui_label = "Internal Resolution";
+> = 1.0;
 
 uniform float cust_artifacting <
 	ui_type = "drag";
@@ -77,7 +80,7 @@ uniform float ntsc_taps <
 
 uniform float ntsc_cscale1 <
 	ui_type = "drag";
-	ui_min = 1.0;
+	ui_min = 0.5;
 	ui_max = 4.00;
 	ui_step = 0.05;
 	ui_label = "NTSC Chroma Scaling/Bleeding (2 Phase)";
@@ -117,10 +120,10 @@ uniform float ntsc_gamma <
 
 uniform float ntsc_rainbow <
 	ui_type = "drag";
-	ui_min = -1.0;
-	ui_max = 1.0;
-	ui_step = 0.1;
-	ui_label = "NTSC Coloring/Rainbow Effect";
+	ui_min = 0.0;
+	ui_max = 3.0;
+	ui_step = 1.0;
+	ui_label = "NTSC Coloring/Rainbow Effect (2 Phase)";
 > = 0.0;
 
 uniform float ntsc_ring <
@@ -136,16 +139,32 @@ uniform float ntsc_shrp <
 	ui_min = -10.0;
 	ui_max = 10.0;
 	ui_step = 0.5;
-	ui_label = "NTSC Sharpness (Negative:Adaptive)";
+	ui_label = "NTSC Sharpness (Adaptive)";
 > = 0.0;
 
 uniform float ntsc_shpe <
 	ui_type = "drag";
 	ui_min = 0.5;
 	ui_max = 1.0;
-	ui_step = 0.05;
+	ui_step = 0.025;
 	ui_label = "NTSC Sharpness Shape";
-> = 0.75;
+> = 0.8;
+
+uniform float ntsc_charp1 <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 10.0;
+	ui_step = 0.5;
+	ui_label = "NTSC Preserve 'Edge' Colors (2 Phase)";
+> = 0.0;
+
+uniform float ntsc_charp2 <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 10.0;
+	ui_step = 0.5;
+	ui_label = "NTSC Preserve 'Edge' Colors (3 Phase)";
+> = 0.0;
 
 uniform float CSHARPEN <
 	ui_type = "drag";
@@ -160,7 +179,7 @@ uniform float CCONTR <
 	ui_min = 0.0;
 	ui_max = 0.25;
 	ui_step = 0.01;
-	ui_label = "FSharpen - Sharpen Contrast/Ringing";
+	ui_label = "FSharpen - Sharpen (+ Deblur) Contrast";
 > = 0.05;
 
 uniform float CDETAILS <
@@ -178,6 +197,22 @@ uniform float DEBLUR <
 	ui_step = 0.25;
 	ui_label = "FSharpen - Deblur Strength";
 > = 1.0;
+
+uniform float DREDGE <
+	ui_type = "drag";
+	ui_min = 0.7;
+	ui_max = 1.0;
+	ui_step = 0.01;
+	ui_label = "FSharpen - Deblur Edges Falloff";
+> = 0.89;
+
+uniform float DSHARP <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 4.0;
+	ui_step = 0.2;
+	ui_label = "FSharpen - Deblur Extra Sharpen";
+> = 0.0;
 
 uniform float PR <
 	ui_type = "drag";
@@ -211,7 +246,7 @@ uniform float AS <
 	ui_label = "Afterglow Strength";
 > = 0.2;
 
-uniform float sat <
+uniform float ST <
 	ui_type = "drag";
 	ui_min = 0.0;
 	ui_max = 1.0;
@@ -361,7 +396,7 @@ uniform float interm <
 	ui_max = 5.0;
 	ui_step = 1.0;
 	ui_label = "Interlace Mode: 0:OFF | 1-3:Normal | 4-5:Interpolation";
-> = 1.0;
+> = 4.0;
 
 uniform float iscanb <
 	ui_type = "drag";
@@ -390,7 +425,7 @@ uniform float hiscan <
 uniform float intres <
 	ui_type = "drag";
 	ui_min = 0.0;
-	ui_max = 6.0;
+	ui_max = 10.0;
 	ui_step = 0.5;
 	ui_label = "Internal Resolution Y: 0.5 | Y-Dowsample";
 > = 0.0;
@@ -427,29 +462,21 @@ uniform float SIGMA_HOR <
 	ui_label = "Horizontal Blur Sigma";
 > = 0.8;
 
-uniform float S_SHARPH <
+uniform float S_SHARP <
 	ui_type = "drag";
 	ui_min = 0.0;
 	ui_max = 3.0;
 	ui_step = 0.05;
 	ui_label = "Substractive Sharpness";
-> = 1.2;
+> = 1.1;
 
-uniform float HSHARP <
+uniform float SHARP <
 	ui_type = "drag";
 	ui_min = 0.0;
 	ui_max = 2.0;
 	ui_step = 0.1;
 	ui_label = "Sharpness Definition";
 > = 1.2;
-
-uniform float HARNG <
-	ui_type = "drag";
-	ui_min = 0.0;
-	ui_max = 4.0;
-	ui_step = 0.05;
-	ui_label = "Substractive Sharpness Ringing";
-> = 0.3;
 
 uniform float MAXS <
 	ui_type = "drag";
@@ -458,6 +485,14 @@ uniform float MAXS <
 	ui_step = 0.01;
 	ui_label = "Maximum Sharpness";
 > = 0.18;
+
+uniform float SSRNG <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 4.0;
+	ui_step = 0.05;
+	ui_label = "Substractive Sharpness Ringing";
+> = 0.3;
 
 uniform float m_glow <
 	ui_type = "drag";
@@ -509,7 +544,7 @@ uniform float m_glow_mask <
 
 uniform float FINE_GAUSS <
 	ui_type = "drag";
-	ui_min = 1.0;
+	ui_min = -1.0;
 	ui_max = 5.0;
 	ui_step = 1.0;
 	ui_label = "Fine (Magic) Glow Sampling";
@@ -549,7 +584,7 @@ uniform float SIGMA_V <
 
 uniform float FINE_BLOOM <
 	ui_type = "drag";
-	ui_min = 1.0;
+	ui_min = -1.0;
 	ui_max = 5.0;
 	ui_step = 1.0;
 	ui_label = "Fine Bloom/Halation Sampling";
@@ -649,6 +684,14 @@ uniform float gamma_c <
 	ui_max = 2.0;
 	ui_step = 0.025;
 	ui_label = "Gamma Correct";
+> = 1.0;
+
+uniform float gamma_d <
+	ui_type = "drag";
+	ui_min = 1.0;
+	ui_max = 2.0;
+	ui_step = 0.025;
+	ui_label = "Complementary Gamma Correct";
 > = 1.0;
 
 uniform float brightboost1 <
@@ -755,14 +798,6 @@ uniform float spike <
 	ui_label = "Scanlines Spike Removal";
 > = 1.0;
 
-uniform float ssharp <
-	ui_type = "drag";
-	ui_min = 0.0;
-	ui_max = 0.3;
-	ui_step = 0.01;
-	ui_label = "Smart Sharpen Scanlines";
-> = 0.0;
-
 uniform float scangamma <
 	ui_type = "drag";
 	ui_min = 0.5;
@@ -770,6 +805,14 @@ uniform float scangamma <
 	ui_step = 0.05;
 	ui_label = "Scanlines Gamma";
 > = 2.4;
+
+uniform float rolling_scan <
+	ui_type = "drag";
+	ui_min = -1.0;
+	ui_max = 1.0;
+	ui_step = 0.01;
+	ui_label = "Rolling Scanlines";
+> = 0.0;
 
 uniform float no_scanlines <
 	ui_type = "drag";
@@ -806,18 +849,18 @@ uniform float blm_2 <
 uniform float csize <
 	ui_type = "drag";
 	ui_min = 0.0;
-	ui_max = 0.25;
-	ui_step = 0.005;
+	ui_max = 0.35;
+	ui_step = 0.01;
 	ui_label = "Corner Size";
 > = 0.0;
 
 uniform float bsize <
 	ui_type = "drag";
 	ui_min = 0.0;
-	ui_max = 3.0;
+	ui_max = 2.0;
 	ui_step = 0.01;
 	ui_label = "Border Size";
-> = 0.01;
+> = 0.0;
 
 uniform float sborder <
 	ui_type = "drag";
@@ -933,8 +976,8 @@ uniform float masksize <
 
 uniform float mask_zoom <
 	ui_type = "drag";
-	ui_min = -5.0;
-	ui_max = 5.0;
+	ui_min = -10.0;
+	ui_max = 6.0;
 	ui_step = 1.0;
 	ui_label = "CRT Mask Zoom (+ Mask Width)";
 > = 0.0;
@@ -1030,8 +1073,8 @@ uniform float slotms <
 uniform float smoothmask <
 	ui_type = "drag";
 	ui_min = 0.0;
-	ui_max = 1.0;
-	ui_step = 1.0;
+	ui_max = 2.0;
+	ui_step = 0.25;
 	ui_label = "Smooth Masks In Bright Scanlines";
 > = 0.0;
 
@@ -1057,6 +1100,30 @@ uniform float mclip <
 	ui_max = 1.0;
 	ui_step = 0.025;
 	ui_label = "Preserve Mask Strength";
+> = 0.0;
+
+uniform float pr_scan <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 1.0;
+	ui_step = 0.025;
+	ui_label = "Preserve Scanlines Strength";
+> = 0.1;
+
+uniform float maskmid <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 1.0;
+	ui_step = 0.05;
+	ui_label = "Mitigate Mask on Mid-Colors";
+> = 0.0;
+
+uniform float edgemask <
+	ui_type = "drag";
+	ui_min = 0.0;
+	ui_max = 1.0;
+	ui_step = 0.1;
+	ui_label = "Mitigate Mask on Edges";
 > = 0.0;
 
 uniform float dctypex <
@@ -1165,8 +1232,6 @@ uniform float post_br <
 
 #include "ReShade.fxh"
 
-#define SIGNAL1 float2(4.0*Resolution_X,Resolution_Y)
-#define SIGNAL2 float2(2.0*Resolution_X,Resolution_Y)
 #define TexSize float2(Resolution_X,Resolution_Y)
 #define IptSize float2(800.00000000,600.00000000)
 #define OptSize float4(BUFFER_SCREEN_SIZE,1.0/BUFFER_SCREEN_SIZE)
@@ -1177,20 +1242,20 @@ uniform float post_br <
 #define eps 1e-8
 #define pii 3.14159265
 #define fracoord (fuxcoord*OptSize.xy)
-#define COMPAT_TEXTURE(c,d) tex2D(c,d)
-#define NTSC_01 float4(SIGNAL1,1.0/SIGNAL1)
-#define NTSC_02 float4(SIGNAL2,1.0/SIGNAL2)
+#define texCD(c,d) tex2Dlod(c,float4(d,0,0))
+#define LumSize float4(2.0*TexSize.x,1.0*TexSize.y,1.0/(2.0*TexSize.x),1.0/(1.0*TexSize.y))
 #define mix_m float3x3(BRIGHTNESS,ARTIFACT,ARTIFACT,FRINGING,2.0*SATURATION,0.0,FRINGING,0.0,2.0*SATURATION)
 #define rgb_m float3x3(0.299,0.587,0.114,0.596,-0.274,-0.322,0.211,-0.523,0.312)
 #define yiq_m float3x3(1.000,0.956,0.621,1.000,-0.272,-0.647,1.000,-1.106,1.703)
-#define tex_1 texcoord-float2(0.25*OrgSize.z/4.0,0.0)
-#define tex_2 texcoord-float2(0.25*OrgSize.z/4.0,0.0)
+#define tex_c texcoord+float2(0.50*OrgSize.z/4.0,0.0)
 #define inv_sqr_h 1.0/(2.0*SIGMA_H*SIGMA_H)
 #define inv_sqr_v 1.0/(2.0*SIGMA_V*SIGMA_V)
 #define inv_sqr_x 1.0/(2.0*SIGMA_X*SIGMA_X)
 #define inv_sqr_y 1.0/(2.0*SIGMA_Y*SIGMA_Y)
-#define fetch_offset1(dx)  tex2D(NTSC_S03,tex_1+dx).xyz+tex2D(NTSC_S03,tex_1-dx).xyz
-#define fetch_offset2(dx) float3(tex2D(NTSC_S03,tex_1+dx.xz).x+tex2D(NTSC_S03,tex_1-dx.xz).x,tex2D(NTSC_S03,tex_1+dx.yz).yz+tex2D(NTSC_S03,tex_1-dx.yz).yz)
+#define FINE_GAUSS (FINE_GAUSS>0.5)?FINE_GAUSS:lerp(0.75,0.5,-FINE_GAUSS)
+#define FINE_BLOOM (FINE_BLOOM>0.5)?FINE_BLOOM:lerp(0.75,0.5,-FINE_BLOOM)
+#define fetch_offset1(dx)  texCD(NTSC_S03,tex_c+dx).xyz+texCD(NTSC_S03,tex_c-dx).xyz
+#define fetch_offset2(dx) float3(texCD(NTSC_S03,tex_c+dx.xz).x+texCD(NTSC_S03,tex_c-dx.xz).x,texCD(NTSC_S03,tex_c+dx.yz).yz+texCD(NTSC_S03,tex_c-dx.yz).yz)
 
 #ifndef Resolution_X
 #define Resolution_X 320
@@ -1202,7 +1267,7 @@ uniform float post_br <
 
 #define NTSC_S00 ReShade::BackBuffer
 
-texture NTSC_T01{Width=1.0*Resolution_X;Height=Resolution_Y ;Format=RGBA32F;};
+texture NTSC_T01{Width=1.0*Resolution_X;Height=Resolution_Y ;Format=RGBA16F;};
 sampler NTSC_S01{Texture=NTSC_T01;AddressU=BORDER;AddressV=BORDER;AddressW=BORDER;MagFilter=POINT ;MinFilter=POINT ;MipFilter=POINT ;};
 
 texture NTSC_T02{Width=1.0*Resolution_X;Height=Resolution_Y ;Format=RGBA16F;};
@@ -1229,7 +1294,7 @@ sampler NTSC_S08{Texture=NTSC_T08;AddressU=BORDER;AddressV=BORDER;AddressW=BORDE
 texture NTSC_T09{Width=1.0*BUFFER_WIDTH;Height=Resolution_Y ;Format=RGBA16F;};
 sampler NTSC_S09{Texture=NTSC_T09;AddressU=BORDER;AddressV=BORDER;AddressW=BORDER;MagFilter=LINEAR;MinFilter=LINEAR;MipFilter=LINEAR;};
 
-texture NTSC_T10{Width=1.0*800.00000000;Height=600.00000000 ;Format=RGBA16F;};
+texture NTSC_T10{Width=1.0*800.00000000;Height=Resolution_Y ;Format=RGBA16F;};
 sampler NTSC_S10{Texture=NTSC_T10;AddressU=BORDER;AddressV=BORDER;AddressW=BORDER;MagFilter=LINEAR;MinFilter=LINEAR;MipFilter=LINEAR;};
 
 texture NTSC_T11{Width=1.0*800.00000000;Height=600.00000000 ;Format=RGBA16F;};
@@ -1298,20 +1363,21 @@ float3 plant(float3 tar,float r)
 
 float3 fetch_pixel(float2 coord)
 {
-	float2 dx=float2(NTSC_02.z,0.0)*downsample_levelx;
-	float2 dy=float2(0.0,NTSC_02.w)*downsample_levely;
+	float2 dx=float2(LumSize.z,0.0)*downsample_levelx;
+	float2 dy=float2(0.0,LumSize.w)*downsample_levely;
 	float2 d1=dx+dy;
 	float2 d2=dx-dy;
 	float sum=15.0;
-	float3 result=3.0*COMPAT_TEXTURE(NTSC_S06,coord).rgb+2.0*COMPAT_TEXTURE(NTSC_S06,coord+dx).rgb+2.0*COMPAT_TEXTURE(NTSC_S06,coord-dx).rgb+
-	2.0*COMPAT_TEXTURE(NTSC_S06,coord+dy).rgb+2.0*COMPAT_TEXTURE(NTSC_S06,coord-dy).rgb+COMPAT_TEXTURE(NTSC_S06,coord+d1).rgb+
-	COMPAT_TEXTURE(NTSC_S06,coord-d1).rgb+COMPAT_TEXTURE(NTSC_S06,coord+d2).rgb+COMPAT_TEXTURE(NTSC_S06,coord-d2).rgb;
+	float3 result=
+	3.0*texCD(NTSC_S06,coord   ).rgb+2.0*texCD(NTSC_S06,coord+dx).rgb+2.0*texCD(NTSC_S06,coord-dx).rgb+
+	2.0*texCD(NTSC_S06,coord+dy).rgb+2.0*texCD(NTSC_S06,coord-dy).rgb+    texCD(NTSC_S06,coord+d1).rgb+
+		texCD(NTSC_S06,coord-d1).rgb+    texCD(NTSC_S06,coord+d2).rgb+    texCD(NTSC_S06,coord-d2).rgb;
 	return result/sum;
 }
 
 float crthd_h(float x,float y)
 {
-	float invsigmah=1.0/(2.0*SIGMA_HOR*SIGMA_HOR*y*y);
+	float invsigmah=1.0/(2.0*SIGMA_HOR*SIGMA_HOR*y*y*internal_res*internal_res);
 	return exp(-x*x*invsigmah);
 }
 
@@ -1343,11 +1409,6 @@ float mod(float x,float y)
 float st0(float x)
 {
 	return exp2(-10.0*x*x);
-}
-
-float st1(float x)
-{
-	return exp2(- 8.0*x*x);
 }
 
 float3 sw0(float x,float color,float scanline,float3 c)
@@ -1391,7 +1452,7 @@ float2 warp(float2 pos)
 	return pos*0.5+0.5;
 }
 
-float3 gc(float3 c)
+float3 gc1(float3 c)
 {
 	float mc=max(max(c.r,c.g),c.b);
 	float mg=pow(mc,1.0/gamma_c);
@@ -1410,7 +1471,12 @@ float3 yiq2rgb(float3 y)
 
 float get_luma(float3 c)
 {
-	return dot(c,float3(0.2989,0.5870,0.1140));
+	return dot(c,float3(0.299,0.587,0.114));
+}
+
+float swoothstep(float e0,float e1,float x)
+{
+	return clamp((x-e0)/(e1-e0),0.0,1.0);
 }
 
 float3 crt_mask(float2 pos,float mx,float mb)
@@ -1589,16 +1655,14 @@ float humbars(float pos)
 
 float corner(float2 pos)
 {
-	float2 bc= bsize*float2(1.0,OptSize.x/OptSize.y)*0.05;
-	pos=clamp(pos,0.0,1.0);
-	pos=abs(2.0*(pos-0.5));
-	float csz=lerp(400.0,7.0,pow(4.0*csize,0.10));
-	float crn=dot(pow(pos,csz.xx*float2(1.0,OptSize.y/OptSize.x)),1.0.xx);
-	crn=(csize==0.0)? max(pos.x,pos.y) : pow(crn,1.0/csz);
-	pos=max(pos,crn);
-	float2 rs=(bsize==0.0)? 1.0.xx : lerp(0.0.xx,1.0.xx,smoothstep(1.0.xx,1.0.xx-bc,sqrt(pos)));
-	rs=pow(rs, sborder.xx);
-	return sqrt(rs.x*rs.y);
+	pos=abs(2.0*(pos-0.50));
+	float2 aspect=float2(1.0,OptSize.x/OptSize.y);
+	float b=bsize*0.05+0.0005;pos.y=pos.y+b*(aspect.y-1.0);
+	float2 crn=max(csize.xx,2.0*b+0.0015);
+	float2 crp=max(pos-(1.0-crn*aspect),0.0)/aspect;float cd=sqrt(dot(crp,crp));
+	pos=max(pos,1.0-crn+cd);
+	float res=lerp(1.0,0.0,smoothstep(1.0-b,1.0,sqrt(max(pos.x,pos.y))));
+	return pow(res,sborder);
 }
 
 float3 declip(float3 c,float b)
@@ -1613,9 +1677,17 @@ float igc(float mc)
 	return pow(mc,gamma_c);
 }
 
+float3 gc2(float3 c,float w3)
+{
+	float mc=max(max(c.r,c.g),c.b);
+	float p=1.0/(1.0+(gamma_d-1.0)* lerp(0.375,1.0,w3));
+	float mg=pow(mc, p );
+	return c*mg/(mc+eps);
+}
+
 float3 noise(float3 v)
 {
-	if(addnoised<0.0)v.z=-addnoised; else v.z= mod(v.z,6001.0)/1753.0;
+	if(addnoised<0.0)v.z=-addnoised;else v.z= mod(v.z,6001.0)/1753.0;
 	v =frac(v)+frac(v*1e4)+frac(v*1e-4);
 	v+=float3(0.12345,0.6789,0.314159);
 	v =frac(v*dot(v,v)*123.456);
@@ -1646,20 +1718,20 @@ void bring_pixel(inout float3 c,inout float3 b,inout float3 g,float2 coord,float
 	float2 rc=deconrx*dx+deconry*dy;
 	float2 gc=decongx*dx+decongy*dy;
 	float2 bc=deconbx*dx+deconby*dy;
-	float r1=COMPAT_TEXTURE(NTSC_S14,coord+rc).r;
-	float g1=COMPAT_TEXTURE(NTSC_S14,coord+gc).g;
-	float b1=COMPAT_TEXTURE(NTSC_S14,coord+bc).b;
+	float r1=texCD(NTSC_S14,coord+rc).r;
+	float g1=texCD(NTSC_S14,coord+gc).g;
+	float b1=texCD(NTSC_S14,coord+bc).b;
 	float ds=decons;
 	float3 d=float3(r1,g1,b1);
 	c=clamp(lerp(c,d,ds),0.0,1.0);
-	r1=COMPAT_TEXTURE(NTSC_S13,boord+rc).r;
-	g1=COMPAT_TEXTURE(NTSC_S13,boord+gc).g;
-	b1=COMPAT_TEXTURE(NTSC_S13,boord+bc).b;
+	r1=texCD(NTSC_S13,boord+rc).r;
+	g1=texCD(NTSC_S13,boord+gc).g;
+	b1=texCD(NTSC_S13,boord+bc).b;
 	d=float3(r1,g1,b1);
 	b=g=lerp(b,d,min(ds,1.0));
-	r1=COMPAT_TEXTURE(NTSC_S11,boord+rc).r;
-	g1=COMPAT_TEXTURE(NTSC_S11,boord+gc).g;
-	b1=COMPAT_TEXTURE(NTSC_S11,boord+bc).b;
+	r1=texCD(NTSC_S11,boord+rc).r;
+	g1=texCD(NTSC_S11,boord+gc).g;
+	b1=texCD(NTSC_S11,boord+bc).b;
 	d=float3(r1,g1,b1);
 	g=lerp(g,d,min(ds,1.0));
 }
@@ -1669,15 +1741,15 @@ float4 AfterglowPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float2 dx=float2(OrgSize.z,0.0);
 	float2 dy=float2(0.0,OrgSize.w);
 	float w=1.0;
-	float3 color0=COMPAT_TEXTURE(NTSC_S00,texcoord.xy   ).rgb;
-	float3 color1=COMPAT_TEXTURE(NTSC_S00,texcoord.xy-dx).rgb;
-	float3 color2=COMPAT_TEXTURE(NTSC_S00,texcoord.xy+dx).rgb;
-	float3 color3=COMPAT_TEXTURE(NTSC_S00,texcoord.xy-dy).rgb;
-	float3 color4=COMPAT_TEXTURE(NTSC_S00,texcoord.xy+dy).rgb;
-	float3 clr=(2.5*color0+color1+color2+color3+color4)/6.5;
-	float3 a=COMPAT_TEXTURE(NTSC_S01,texcoord.xy).rgb;
+	float3 color0=texCD(NTSC_S00,texcoord   ).rgb;
+	float3 color1=texCD(NTSC_S00,texcoord-dx).rgb;
+	float3 color2=texCD(NTSC_S00,texcoord+dx).rgb;
+	float3 color3=texCD(NTSC_S00,texcoord-dy).rgb;
+	float3 color4=texCD(NTSC_S00,texcoord+dy).rgb;
+	float3 cr=(2.5*color0+color1+color2+color3+color4)/6.5;
+	float3 a=texCD(NTSC_S01,texcoord).rgb;
 	if((color0.r+color0.g+color0.b<5.0/255.0)){w=0.0;}
-	float3 result=lerp(max(lerp(clr,a,0.49+float3(PR,PG,PB))-1.25/255.0,0.0),clr,w);
+	float3 result=lerp(max(lerp(cr,a,0.49+float3(PR,PG,PB))-1.25/255.0,0.0),cr,w);
 	return float4(result,w);
 }
 
@@ -1696,52 +1768,49 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	const float3x3 ToREC=float3x3(1.716651,-0.666684,0.017640,-0.355671,1.616481,-0.042771,-0.253366,0.015769,0.942103);
 	const float3x3 D65_to_D55=float3x3(0.4850339153,0.2500956126,0.0227359648,0.3488957224,0.6977914447,0.1162985741,0.1302823568,0.0521129427,0.6861537456);
 	const float3x3 D65_to_D93=float3x3(0.3412754080,0.1759701322,0.0159972847,0.3646170520,0.7292341040,0.1215390173,0.2369894093,0.0947957637,1.2481442225);
-	float4 imgColor=COMPAT_TEXTURE(NTSC_S00,texcoord.xy);
-	float4 aftrglow=COMPAT_TEXTURE(NTSC_S01,texcoord.xy);
+	float4 imgColor=texCD(NTSC_S00,texcoord);
+	float4 aftrglow=texCD(NTSC_S01,texcoord);
 	float w=1.0-aftrglow.w;
 	float l=length(aftrglow.rgb);
-	aftrglow.rgb=AS*w*normalize(pow(aftrglow.rgb+0.01,sat))*l;
+	aftrglow.rgb=AS*w*normalize(pow(aftrglow.rgb+0.01,ST))*l;
 	float bp=w*BP/255.0;
-	if(sega_fix>0.5)imgColor.rgb=imgColor.rgb*(255.0/239.0);
+	if(sega_fix>0.5) imgColor.rgb=imgColor.rgb*(255.0/239.0);
 	imgColor.rgb=min(imgColor.rgb,1.0);
 	float3 color=imgColor.rgb;
-	if(int(TNTC)==0)
+	if(int(TNTC)==0) {color.rgb=imgColor.rgb;}else
 	{
-	color.rgb=imgColor.rgb;
-	}else
-	{
-	float lutlow=LUTLOW/255.0;float invLS=1.0/32.0;
+	float lutlow=LUTLOW/255.0;float invs=1.0/32.0;
 	float3 lut_ref=imgColor.rgb+lutlow*(1.0-pow(imgColor.rgb,0.333.xxx));
-	float lutb=lut_ref.b*(1.0-0.5*invLS);
-	lut_ref.rg=lut_ref.rg*(1.0-invLS)+0.5*invLS;
+	float lutb=lut_ref.b*(1.0-0.5*invs);
+	lut_ref.rg=lut_ref.rg*(1.0-invs)+0.5*invs;
 	float tile1=ceil(lutb*(32.0-1.0));
 	float tile0=max(tile1-1.0,0.0);
 	float f=frac(lutb*(32.0-1.0));if(f==0.0)f=1.0;
-	float2 coord0=float2(tile0+lut_ref.r,lut_ref.g)*float2(invLS,1.0);
-	float2 coord1=float2(tile1+lut_ref.r,lut_ref.g)*float2(invLS,1.0);
+	float2 coord0=float2(tile0+lut_ref.r,lut_ref.g)*float2(invs,1.0);
+	float2 coord1=float2(tile1+lut_ref.r,lut_ref.g)*float2(invs,1.0);
 	float4 color1,color2,res;
 	if(int(TNTC)==1)
 	{
-	color1=COMPAT_TEXTURE(NTSC_L01,coord0);
-	color2=COMPAT_TEXTURE(NTSC_L01,coord1);
+	color1=texCD(NTSC_L01,coord0);
+	color2=texCD(NTSC_L01,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==2)
 	{
-	color1=COMPAT_TEXTURE(NTSC_L02,coord0);
-	color2=COMPAT_TEXTURE(NTSC_L02,coord1);
+	color1=texCD(NTSC_L02,coord0);
+	color2=texCD(NTSC_L02,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==3)
 	{
-	color1=COMPAT_TEXTURE(NTSC_L03,coord0);
-	color2=COMPAT_TEXTURE(NTSC_L03,coord1);
+	color1=texCD(NTSC_L03,coord0);
+	color2=texCD(NTSC_L03,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==4)
 	{
-	color1=COMPAT_TEXTURE(NTSC_L04,coord0);
-	color2=COMPAT_TEXTURE(NTSC_L04,coord1);
+	color1=texCD(NTSC_L04,coord0);
+	color2=texCD(NTSC_L04,coord1);
 	res=lerp(color1,color2,f);
 	}
 	res.rgb=fix_lut(res.rgb,imgColor.rgb);
@@ -1768,10 +1837,10 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=clamp(color,0.0,1.0);
 	color=pow(color,1.0/p);
 	if(CP==-1.0)color=c;
-	float3 scolor1=plant(pow(color,wp_saturation),max(max(color.r,color.g),color.b));
+	float3 solor1=plant(pow(color,wp_saturation),max(max(color.r,color.g),color.b));
 	float luma=dot(color,float3(0.299,0.587,0.114));
-	float3 scolor2=lerp(luma,color,wp_saturation);
-	color=(wp_saturation>1.0)?scolor1:scolor2;
+	float3 solor2=lerp(luma,color,wp_saturation);
+	color=(wp_saturation>1.0)?solor1:solor2;
 	color=plant(color,contrast(max(max(color.r,color.g),color.b)));
 	p=2.2;
 	color=clamp(color,0.0,1.0);
@@ -1789,7 +1858,7 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=max(color+BP/255.0,0.0)/(1.0+BP/255.0*step(-BP/255.0,max(max(color.r,color.g),color.b)))+aftrglow.rgb;
 	}
 	color=min(color*pre_bb,1.0);
-	return float4(color,vignette(texcoord.xy));
+	return float4(color,vignette(texcoord));
 }
 
 float4 Signal_1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
@@ -1798,90 +1867,72 @@ float4 Signal_1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float phase= (ntsc_phase<1.5)?((OrgSize.x>300.0)? 2.0:3.0):((ntsc_phase>2.5)?3.0:2.0);
 	if(ntsc_phase==4.0)phase=3.0;
 	float res=ntsc_scale;
-	float mod1=2.0;
-	float mod2=3.0;
 	float CHROMA_MOD_FREQ=(phase<2.5)?(4.0*pii/15.0):(pii/3.0);
 	float ARTIFACT=cust_artifacting;
 	float FRINGING=cust_fringing;
 	float BRIGHTNESS=ntsc_brt;
 	float SATURATION=ntsc_sat;
 	float MERGE=0.0;
-	float mix1=0.0;
 	if(ntsc_fields== 1.0&&phase==3.0) MERGE=1.0;else
 	if(ntsc_fields== 2.0) MERGE=0.0;else
 	if(ntsc_fields== 3.0) MERGE=1.0;
 	float2 pix_no=texcoord*OrgSize.xy*pix_res* float2(4.0,1.0);
-	float3 col0=tex2D(NTSC_S02, texcoord).rgb;
-	float3 yiq1=rgb2yiq(col0);float c0=yiq1.x;
+	float3 col0=texCD(NTSC_S02, texcoord).rgb;
+	float3 yiq1=rgb2yiq(col0);
 	yiq1.x=pow(yiq1.x,ntsc_gamma); float lum=yiq1.x;
 	float2 dx=float2(OrgSize.z,0.0);
-	float3 c1=tex2D(NTSC_S02,texcoord-dx).rgb;
-	float3 c2=tex2D(NTSC_S02,texcoord+dx).rgb;
-	if(abs(ntsc_rainbow)>0.025)
-	{
-	float2 dy=float2(0.0,OrgSize.w);
-	float3 c3=tex2D(NTSC_S02,texcoord+dy).rgb;
-	float3 c4=tex2D(NTSC_S02,texcoord+dx+dy ).rgb;
-	float3 c5=tex2D(NTSC_S02,texcoord+dx+dx ).rgb;
-	float3 c6=tex2D(NTSC_S02,texcoord+dx*3.0).rgb;
-	c1.x=get_luma(c1);
-	c2.x=get_luma(c2);
-	c3.x=get_luma(c3);
-	c4.x=get_luma(c4);
-	c5.x=get_luma(c5);
-	c6.x=get_luma(c6);
-	float mix2=min(5.0*min(min(abs(c0-c1.x),abs(c0-c2.x)),min(abs(c2.x-c5.x),abs(c5.x-c6.x))),1.0);
-	float bar1=1.0-min(7.0*min(max(max(c0,c3.x)-0.15,0.0),max(max(c2.x,c4.x)-0.15,0.0)),1.0);
-	float bar2=step(abs(c1.x-c2.x)+abs(c0-c5.x)+abs(c2.x-c6.x),0.325);
-	mix1=bar1*bar2*mix2*(1.0-min(10.0*min(abs(c0-c3.x),abs(c2.x-c4.x)),1.0));
-	mix1=mix1*ntsc_rainbow;
-	}
+	float c1=get_luma(texCD(NTSC_S02,texcoord-dx).rgb);
+	float c2=get_luma(texCD(NTSC_S02,texcoord+dx).rgb);
 	if(ntsc_phase==4.0)
 	{
-	float mix3=min(5.0*abs(c1.x-c2.x),1.0);
-	c1.x=pow(c1.x,ntsc_gamma);
-	c2.x=pow(c2.x,ntsc_gamma);
-	yiq1.x=lerp(min(0.5*(yiq1.x+max(c1.x,c2.x)),max(yiq1.x,min(c1.x,c2.x))),yiq1.x,mix3);
+	float miix=min(5.0*abs(c1-c2),1.0);
+	c1=pow(c1,ntsc_gamma);
+	c2=pow(c2,ntsc_gamma);
+	yiq1.x=lerp(min(0.5*(yiq1.x+max(c1,c2)),max(yiq1.x,min(c1,c2))),yiq1.x,miix);
 	}
 	float3 yiq2=yiq1;
 	float3 yiqs=yiq1;
 	float3 yiqz=yiq1;
-	float taps_comp=1.0+ 2.0*step(ntsc_taps,15.5);
+	float3 temp=yiq1;
+	float mit=ntsc_taps;if(ntsc_charp1>0.25&&phase==2.0)mit=clamp(mit,8.0,min(ntsc_taps,14.0));
+	mit=swoothstep(16.0,8.0,mit)*0.325;
 	if(MERGE>0.5)
 	{
-	float chroma_phase2=(phase<2.5)?pii*(mod(pix_no.y,mod1)+mod(framecount+1,2.)):0.6667*pii*(mod(pix_no.y,mod2)+mod(framecount+1,2.));
-	float mod_phase2=chroma_phase2 *(1.0-mix1)+pix_no.x*CHROMA_MOD_FREQ*taps_comp;
-	float i_mod2=cos(mod_phase2);
-	float q_mod2=sin(mod_phase2);
+	float chroma_phase2=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(framecount+1.0,2.0)):0.6667*pii*(mod(pix_no.y,3.0)+mod(framecount+1.0,2.0));
+	float mod_phase2=chroma_phase2+pix_no.x*CHROMA_MOD_FREQ;
+	float i_mod2=cos( mod_phase2 );
+	float q_mod2=sin( mod_phase2 );
 	yiq2.yz*=float2(i_mod2,q_mod2);
 	yiq2=mul(mix_m,yiq2);
 	yiq2.yz*=float2(i_mod2,q_mod2);
+	yiq2.yz =lerp(yiq2.yz,temp.yz,mit);
 	if(res>1.025)
 	{
-	mod_phase2=chroma_phase2 *(1.0-mix1) +res *pix_no.x*CHROMA_MOD_FREQ*taps_comp;
+	mod_phase2=chroma_phase2 +res *pix_no.x*CHROMA_MOD_FREQ;
 	i_mod2=cos(mod_phase2);
 	q_mod2=sin(mod_phase2);
 	yiqs.yz*=float2(i_mod2,q_mod2);
 	yiq2.x=dot(yiqs,mix_m[0]);
 	}
 	}
-	float chroma_phase1=(phase<2.5)?pii*(mod(pix_no.y,mod1)+mod(framecount  ,2.)):0.6667*pii*(mod(pix_no.y,mod2)+mod(framecount  ,2.));
-	float mod_phase1=chroma_phase1 *(1.0-mix1)+pix_no.x*CHROMA_MOD_FREQ*taps_comp;
-	float i_mod1=cos(mod_phase1);
-	float q_mod1=sin(mod_phase1);
+	float chroma_phase1=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(framecount    ,2.0)):0.6667*pii*(mod(pix_no.y,3.0)+mod(framecount    ,2.0));
+	float mod_phase1=chroma_phase1+pix_no.x*CHROMA_MOD_FREQ;
+	float i_mod1=cos( mod_phase1 );
+	float q_mod1=sin( mod_phase1 );
 	yiq1.yz*=float2(i_mod1,q_mod1);
 	yiq1=mul(mix_m,yiq1);
 	yiq1.yz*=float2(i_mod1,q_mod1);
+	yiq1.yz =lerp(yiq1.yz,temp.yz,mit);
 	if(res>1.025)
 	{
-	mod_phase1=chroma_phase1 *(1.0-mix1) +res *pix_no.x*CHROMA_MOD_FREQ*taps_comp;
+	mod_phase1=chroma_phase1 +res *pix_no.x*CHROMA_MOD_FREQ;
 	i_mod1=cos(mod_phase1);
 	q_mod1=sin(mod_phase1);
 	yiqz.yz*=float2(i_mod1,q_mod1);
 	yiq1.x=dot(yiqz,mix_m[0]);
 	}
 	if(ntsc_phase==4.0){yiq1.x=lum;yiq2.x=lum;}
-	yiq1=(MERGE<0.5)?yiq1:0.5*(yiq1+yiq2);
+	if(MERGE>0.5){if(ntsc_rainbow<0.5||phase>2.5)yiq1=0.5*(yiq1+yiq2); else yiq1.x=0.5*(yiq1.x+yiq2.x);}
 	return float4(yiq1,lum);
 }
 
@@ -1918,37 +1969,45 @@ float4 Signal_2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float res=ntsc_scale;
 	float3 signal=0.0;
 	float2 one=0.25*OrgSize.zz/res;
-	float phase= (ntsc_phase<1.5)?((OrgSize.x>300.0)? 2.0:3.0):((ntsc_phase>2.5)?3.0:2.0);
+	float phase= ( ntsc_phase<1.5)?((OrgSize.x>300.0)?2.0:3.0):((ntsc_phase>2.5)?3.0:2.0);
 	if(ntsc_phase==4.0){phase=3.0;luma_filter_3_phase=luma_filter_4_phase;}
 	float3 wsum =0.0.xxx;
 	float3 sums=wsum;
 	float3 tmps=wsum;
-	float offset=0.0; int i=0; float j=0.0;
+	float offset=0.0;int i=0;
+	float j =0.0;
 	if(phase<2.5)
 	{
 	float loop=max(ntsc_taps,8.0);
-	float2 dx=float2(one.x,0.0);
-	float2 xd=dx;int loopstart=int(TAPS_2_phase-loop);float taps=0.0;
-	float laps=ntsc_taps+1.0;
+	if(ntsc_charp1>0.25)loop=min(loop,14.0);
+	float loob=loop+1.0;
+	float taps=0.0;
 	float ssub=loop-loop/ntsc_cscale1;
+	float mit=1.0+0.0375*pow(swoothstep(16.0,8.0,loop),0.5);
+	float2 dx=float2(one.x*mit,0.0);
+	float2 xd=dx; int loopstart=int(TAPS_2_phase-loop);
 	for(i=loopstart;i<32;i++)
 	{
 	offset=float(i-loopstart);
-	j=offset+1.0; xd=(offset-loop)*dx;
+	j=offset+1.0;xd= (offset-loop)*dx;
 	sums=fetch_offset1(xd);
 	taps=max(j-ssub,0.0);
-	tmps=float3(luma_filter_2_phase[i],taps.xx);
+	tmps=float3(luma_filter_2_phase[i], taps.xx );
 	wsum=wsum+tmps; signal+=sums*tmps;
 	}
-	taps=laps-ssub;
-	tmps=float3(luma_filter_2_phase[TAPS_2_phase],taps.xx);
+	taps=loob-ssub;
+	tmps=float3(luma_filter_2_phase[TAPS_2_phase], taps.xx);
 	wsum=wsum+wsum+tmps;
-	signal+=tex2D(NTSC_S03,tex_1).xyz*tmps;
+	signal+=texCD(NTSC_S03,tex_c).xyz*tmps;
 	signal =signal/wsum;
-	}else{
+	}else
+	{
 	float loop=min(ntsc_taps,TAPS_3_phase); one.y=one.y/ntsc_cscale2;
+	float mit=1.0;
+	if(ntsc_phase==4.0){loop=max(loop,8.0); mit=1.0+0.0375*pow(swoothstep(16.0,8.0,loop),0.5);}
 	float3 dx=float3(one.x,one.y,0.0);
-	float3 xd=dx;int loopstart=int(24.0-loop);
+	float3 xd=dx; int loopstart=int(TAPS_3_phase-loop);
+	dx.x*=mit;
 	for(i=loopstart;i<24;i++)
 	{
 	offset=float(i-loopstart);
@@ -1957,94 +2016,141 @@ float4 Signal_2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	tmps=float3(luma_filter_3_phase[i], chroma_filter_3_phase[i].xx);
 	wsum=wsum+tmps; signal+=sums*tmps;
 	}
-	tmps=float3(luma_filter_3_phase[TAPS_3_phase],chroma_filter_3_phase[TAPS_3_phase],chroma_filter_3_phase[TAPS_3_phase]);
+	tmps=float3(luma_filter_3_phase[TAPS_3_phase], chroma_filter_3_phase[TAPS_3_phase], chroma_filter_3_phase[TAPS_3_phase]);
 	wsum=wsum+wsum+tmps;
-	signal+=tex2D(NTSC_S03,tex_1).xyz*tmps;
+	signal+=texCD(NTSC_S03,tex_c).xyz*tmps;
 	signal =signal/wsum;
 	}
+	signal.x=clamp( signal.x,0.0,1.0);
 	if(ntsc_ring>0.05)
 	{
 	float2 dx=float2(OrgSize.z/min(res,1.0),0.0);
-	float a=tex2D(NTSC_S03,tex_1-1.5*dx).a;
-	float b=tex2D(NTSC_S03,tex_1-0.5*dx).a;
-	float c=tex2D(NTSC_S03,tex_1+1.5*dx).a;
-	float d=tex2D(NTSC_S03,tex_1+0.5*dx).a;
-	float e=tex2D(NTSC_S03,tex_1       ).a;
+	float a=texCD(NTSC_S03,tex_c-2.0*dx).a;
+	float b=texCD(NTSC_S03,tex_c-    dx).a;
+	float c=texCD(NTSC_S03,tex_c+2.0*dx).a;
+	float d=texCD(NTSC_S03,tex_c+    dx).a;
+	float e=texCD(NTSC_S03,tex_c       ).a;
 	signal.x=lerp(signal.x,clamp(signal.x,min(min(min(a,b),min(c,d)),e),max(max(max(a,b),max(c,d)),e)),ntsc_ring);
 	}
-	float3 x=rgb2yiq(tex2D(NTSC_S02,tex_1).rgb);
-	signal.x=clamp(signal.x,-1.0,1.0);
-	float3 rgb=signal;
-	return float4(rgb,x.x);
+	float x=get_luma(texCD(NTSC_S02, tex_c).rgb);
+	return float4(signal,x);
 }
 
 float4 Signal_3_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float2 dx=float2(0.25*OrgSize.z,0.0)/4.0;
-	float2 tcoord=tex_2+dx;
-	float2 offset=float2(0.5*OrgSize.z,0.0);
-	float3 ll1=tex2D(NTSC_S04,tcoord+     offset).xyz;
-	float3 ll2=tex2D(NTSC_S04,tcoord-     offset).xyz;
-	float3 ll3=tex2D(NTSC_S04,tcoord+0.50*offset).xyz;
-	float3 ll4=tex2D(NTSC_S04,tcoord-0.50*offset).xyz;
-	float3 ref=tex2D(NTSC_S04,tcoord).xyz;
-	float lum1=min(tex2D(NTSC_S04,tex_2-dx).a, tex2D(NTSC_S04,tex_2+dx).a);
-	float lum2=max(ref.x,0.0);
-	float dif=max(max(abs(ll1.x-ll2.x),abs(ll1.y-ll2.y)),max(abs(ll1.z-ll2.z),abs(ll1.x*ll1.x-ll2.x*ll2.x)));
-	float dff=max(max(abs(ll3.x-ll4.x),abs(ll3.y-ll4.y)),max(abs(ll3.z-ll4.z),abs(ll3.x*ll3.x-ll4.x*ll4.x)));
-	float lc=(1.0-smoothstep(0.10,0.20,abs(lum2-lum1)))*pow(dff,0.125);
-	float sweight=smoothstep(0.05-0.03*lc,0.45-0.40*lc,dif);
-	float3 signal=ref;
-	if(abs(ntsc_shrp)>-0.1)
+	float2 dx=float2(0.25*OrgSize.z/4.0,0.0);
+	float2 xx=float2(0.50*OrgSize.z,0.0);
+	float2 tcoord=tex_c-2.0*dx;
+	float2 tcoorb=(floor(OrgSize.xy*tex_c)+0.5)*OrgSize.zw;
+	float lcoord=OrgSize.x*(tex_c.x+dx.x )-0.5;
+	float fpx=frac(lcoord);
+	lcoord =(floor(lcoord)+0.5)*OrgSize.z;
+	float3 ll1=texCD(NTSC_S04,tcoord+ xx).xyz;
+	float3 ll2=texCD(NTSC_S04,tcoord- xx).xyz;
+	float dy=0.0;
+	xx=float2(OrgSize.z,0.0);
+	float phase= (ntsc_phase<1.5)?((OrgSize.x>300.0)? 2.0:3.0):((ntsc_phase>2.5)?3.0:2.0);
+	if(ntsc_phase==4.0)phase=3.0;
+	float ca=texCD(NTSC_S03,tcoorb-xx-xx).a;
+	float c0=texCD(NTSC_S03,tcoorb-xx   ).a;
+	float c1=texCD(NTSC_S03,tcoorb      ).a;
+	float c2=texCD(NTSC_S03,tcoorb+xx   ).a;
+	float cb=texCD(NTSC_S03,tcoorb+xx+xx).a;
+	float th=(phase<2.5)?0.025:0.0075;
+	float line0=    swoothstep(th,0.0,min(abs(c1-c0),abs(c2-c1)));
+	float line1=max(swoothstep(th,0.0,min(abs(ca-c0),abs(c2-cb))), line0 );
+	float line2=max(swoothstep(th,0.0,min(abs(ca-c2),abs(c0-cb))), line1 );
+	if( ntsc_rainbow>0.5&&phase<2.5)
 	{
-	float lummix=lerp(lum2,lum1,0.1*abs(ntsc_shrp));
-	float lm1=lerp(lum2*lum2 ,lum1*lum1 ,0.1*abs(ntsc_shrp));lm1=sqrt(lm1);
-	float lm2=lerp(sqrt(lum2),sqrt(lum1),0.1*abs(ntsc_shrp));lm2=lm2* lm2 ;
-	float k1=abs(lummix-lm1)+0.00001;
-	float k2=abs(lummix-lm2)+0.00001;
-	lummix=min((k2*lm1+k1*lm2)/(k1+k2),1.0);
-	signal.x=lerp(lum2,lummix,smoothstep(0.25,0.4,pow(dff,0.125)));
-	signal.x=min(signal.x,max(ntsc_shpe*signal.x,lum2));
-	}else
-	signal.x=clamp(signal.x,0.0,1.0);
-	float3 rgb=signal;
-	if(ntsc_shrp<-0.1)
-	{
-	rgb.x=lerp(ref.x,rgb.x,sweight);
+	float ybool1=1.0;bool ybool2=(c0==c1&&c1==c2);
+	if((ntsc_rainbow<1.5)&&bool(line0))ybool1=0.0;else
+	if((ntsc_rainbow<2.5)&&bool(line2))ybool1=0.0;else
+	if(ybool2)ybool1=0.0;
+	float liine_no=floor( mod(OrgSize.y*tex_c.y,2.0));
+	float frame_no=floor( mod(float(framecount),2.0));
+	float ii=abs(liine_no-frame_no);
+	dy=ii*OrgSize.w*ybool1;
 	}
-	rgb.x=pow(rgb.x,1.0/ntsc_gamma);
-	rgb=clamp(yiq2rgb(rgb),0.0,1.0);
-	return float4(rgb,1.0);
+	float3 ref=texCD(NTSC_S04,tcoord).xyz;
+	float2 org=ref.yz;
+	ref.yz= texCD(NTSC_S04,tcoord+float2(0.0,dy)).yz;
+	float lum1=min(texCD(NTSC_S03,tex_c-dx).a, texCD(NTSC_S03,tex_c+dx).a);
+	float lum2=ref.x ;
+	float3 ll3=abs(ll1-ll2);
+	float di=max(max(ll3.x,ll3.y),max(ll3.z,abs(ll1.x*ll1.x-ll2.x*ll2.x)));
+	float df=pow(di,0.125);
+	float lc=swoothstep(0.20,0.10,abs(lum2-lum1))*df;
+	float tmp1=swoothstep(0.05-0.03*lc,0.425-0.375*lc,di);
+	float tmp2=pow((tmp1+0.1)/1.1,0.25);
+	float sweight=lerp(tmp1,tmp2,line0);
+	float zweight=lerp(tmp1,tmp2,line2);
+	float3 signal=ref;
+	float ntzc_shrp= abs(ntsc_shrp);
+	if(ntzc_shrp>0.25)
+	{
+	float mixer=sweight;
+	if(ntsc_shrp>0.25)mixer=zweight; mixer*=0.1*ntzc_shrp;
+	float lumix=lerp(lum2,lum1,mixer);
+	float lm1=lerp(lum2*lum2 ,lum1*lum1 ,mixer);lm1=sqrt(lm1);
+	float lm2=lerp(sqrt(lum2),sqrt(lum1),mixer);lm2=lm2* lm2 ;
+	float k1=abs(lumix-lm1)+0.00001;
+	float k2=abs(lumix-lm2)+0.00001;
+	signal.x=min((k2*lm1+k1*lm2)/(k1+k2),1.0);
+	signal.x=min(signal.x,max(ntsc_shpe*signal.x,lum2));
+	}
+	if((ntsc_charp1+ntsc_charp2)>0.25)
+	{
+	float mixer=sweight;
+	if(ntsc_shrp>0.25)mixer=zweight;
+	mixer =lerp(swoothstep(0.075,0.125,max(ll3.y,ll3.z)),swoothstep(0.015,0.0275,di),line2)*mixer;
+	mixer*=0.1*((phase<2.5)? ntsc_charp1:ntsc_charp2);
+	tcoord=float2(lcoord,tcoord.y);
+	float3 origin=rgb2yiq(lerp(texCD(NTSC_S02,tcoord).rgb,texCD(NTSC_S02,tcoord+xx).rgb,clamp(1.5*fpx-0.25,0.0,1.0)));
+	signal.yz=lerp(signal.yz,origin.yz,mixer);
+	}
+	if(ntsc_rainbow==2.0&&phase<2.5){signal.yz=lerp(signal.yz,org,zweight);}
+	signal.x=pow(signal.x,1.0/ntsc_gamma);
+	signal=clamp(yiq2rgb(signal),0.0,1.0);
+	return float4(signal,1.0);
 }
 
 float4 SharpnessPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
 	float2 g01=float2(-0.5*OrgSize.z,0.0);
 	float2 g21=float2( 0.5*OrgSize.z,0.0);
-	float3 c01=tex2D(NTSC_S05,texcoord+g01).rgb;
-	float3 c21=tex2D(NTSC_S05,texcoord+g21).rgb;
-	float3 c11=tex2D(NTSC_S05,texcoord    ).rgb;
+	float3 c01=texCD(NTSC_S05,texcoord+g01).rgb;
+	float3 c21=texCD(NTSC_S05,texcoord+g21).rgb;
+	float3 c11=texCD(NTSC_S05,texcoord    ).rgb;
 	float3 b11=0.5*(c01+c21);
 	float contrast=max(max(c11.r,c11.g),c11.b);
 	contrast=lerp(2.0*CCONTR,CCONTR,contrast);
-	float3 mn=min(min(c01,c21),c11);float3 mn1=min(mn,c11*(1.0-contrast));
-	float3 mx=max(max(c01,c21),c11);float3 mx1=max(mx,c11*(1.0+contrast));
-	float3 dif=pow(mx1-mn1+0.0001,0.75);
-	float3 sharpen=lerp(CSHARPEN*CDETAILS,CSHARPEN,dif);
+	float3 nim=min(min(c01,c21),c11);float3 mn1=min(nim,c11*(1.0-contrast));
+	float3 xam=max(max(c01,c21),c11);float3 mx1=max(xam,c11*(1.0+contrast));
+	float3 di0=pow(mx1-mn1+0.00001,0.75);
+	float3 sharpen=lerp(CSHARPEN*CDETAILS,CSHARPEN,di0);
 	float3 res=clamp(lerp(c11,b11,-sharpen),mn1,mx1);
 	if(DEBLUR>1.125)
 	{
-	c01=tex2D(NTSC_S02,texcoord+2.0*g01).rgb;
-	c21=tex2D(NTSC_S02,texcoord+2.0*g21).rgb;
-	c11=tex2D(NTSC_S02,texcoord        ).rgb;
-	mn1=sqrt(min(min(c01,c21),c11)*mn);
-	mx1=sqrt(max(max(c01,c21),c11)*mx);
-	float3 dif1=max(res-mn1,0.0)+0.00001;dif1=pow(dif1,DEBLUR.xxx);
-	float3 dif2=max(mx1-res,0.0)+0.00001;dif2=pow(dif2,DEBLUR.xxx);
-	float3 ratio=dif1/(dif1+dif2);
-	sharpen=min(lerp(mn1,mx1,ratio),pow(res,lerp(0.75.xxx,1.10.xxx,res)));
+	float2 toxcoord=(floor(OrgSize.xy*texcoord)+0.5)*OrgSize.zw;
+	float l01=get_luma(texCD(NTSC_S02,texcoord+2.0*g01).rgb);
+	float l21=get_luma(texCD(NTSC_S02,texcoord+2.0*g21).rgb);
+	float l11=get_luma(texCD(NTSC_S02,toxcoord        ).rgb);
+	float d11=min(min(l01,l21),l11);
+	l11=max(max(l01,l21),l11);
+	float lmn=get_luma(nim);
+	float lmx=get_luma(xam);
+	float ln1=min(lerp(d11,lmn,lmn),lmn);
+	float lx1=max(lerp(lmx,l11,lmx),lmx);
+	float r11=get_luma(res);
+	float di1=max((r11-ln1),0.0)+0.00001;di1=pow(di1,DEBLUR);
+	float di2=max((lx1-r11),0.0)+0.00001;di2=pow(di2,DEBLUR);
+	float ratio=di1/(di1+di2);
+	float zharpen=lerp(ln1,lx1,ratio);
+	zharpen=min(zharpen,max(DREDGE*zharpen,r11));
 	res=rgb2yiq(res);
-	res.x=dot(sharpen,float3(0.2989,0.5870,0.1140));
+	d11=res.x;
+	res.x=zharpen;
+	res.x=clamp((1.0+ DSHARP)* res.x-DSHARP*d11,ln1*(1.0-contrast),lx1*(1.0+contrast));
 	res=max(yiq2rgb(res),0.0);
 	}
 	return float4(res,1.0);
@@ -2052,25 +2158,25 @@ float4 SharpnessPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 
 float4 LuminancePS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float m=max(log2(NTSC_02.x),log2(NTSC_02.y));
+	float m=max(log2(LumSize.x),log2(LumSize.y));
 	m=floor(max(m,1.0))-1.0;
-	float2 dx=float2(1.0/NTSC_02.x,0.0);
-	float2 dy=float2(0.0,1.0/NTSC_02.y);
+	float2 dx=float2(1.0/LumSize.x,0.0);
+	float2 dy=float2(0.0,1.0/LumSize.y);
 	float2 x2=2.0*dx;
 	float2 y2=2.0*dy;
 	float ltotal=0.0;
-	ltotal+=length( tex2Dlod(NTSC_S06,float4(float2(0.3,0.3),m,0)).rgb);
-	ltotal+=length( tex2Dlod(NTSC_S06,float4(float2(0.3,0.7),m,0)).rgb);
-	ltotal+=length( tex2Dlod(NTSC_S06,float4(float2(0.7,0.3),m,0)).rgb);
-	ltotal+=length( tex2Dlod(NTSC_S06,float4(float2(0.7,0.7),m,0)).rgb);
+	ltotal+=length(tex2Dlod(NTSC_S06,float4(float2(0.3,0.3),m,0)).rgb);
+	ltotal+=length(tex2Dlod(NTSC_S06,float4(float2(0.3,0.7),m,0)).rgb);
+	ltotal+=length(tex2Dlod(NTSC_S06,float4(float2(0.7,0.3),m,0)).rgb);
+	ltotal+=length(tex2Dlod(NTSC_S06,float4(float2(0.7,0.7),m,0)).rgb);
 	ltotal*=0.25;
 	ltotal=pow(0.577350269*ltotal,0.7);
-	float lhistory=tex2D(NTSC_S07,0.5).a;
+	float lhistory=texCD(NTSC_S07,float2(0.5,0.5)).a;
 	ltotal=lerp(ltotal,lhistory,lsmooth);
-	float3 l1=COMPAT_TEXTURE(NTSC_S06,fuxcoord.xy   ).rgb;
-	float3 r1=COMPAT_TEXTURE(NTSC_S06,fuxcoord.xy+dx).rgb;
-	float3 l2=COMPAT_TEXTURE(NTSC_S06,fuxcoord.xy-dx).rgb;
-	float3 r2=COMPAT_TEXTURE(NTSC_S06,fuxcoord.xy+x2).rgb;
+	float3 l1=texCD(NTSC_S06,fuxcoord.xy   ).rgb;
+	float3 r1=texCD(NTSC_S06,fuxcoord.xy+dx).rgb;
+	float3 l2=texCD(NTSC_S06,fuxcoord.xy-dx).rgb;
+	float3 r2=texCD(NTSC_S06,fuxcoord.xy+x2).rgb;
 	float c1=dist(l2,l1);
 	float c2=dist(l1,r1);
 	float c3=dist(r2,r1);
@@ -2079,8 +2185,8 @@ float4 LuminancePS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 
 float4 LinearizePS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float3 c1=COMPAT_TEXTURE(NTSC_S06,fuxcoord).rgb;
-	float3 c2=COMPAT_TEXTURE(NTSC_S06,fuxcoord+float2(0.0,OrgSize.w)).rgb;
+	float3 c1=texCD(NTSC_S06,fuxcoord).rgb;
+	float3 c2=texCD(NTSC_S06,fuxcoord+float2(0.0,OrgSize.w)).rgb;
 	if((downsample_levelx+downsample_levely)>0.025)
 	{
 	c1=fetch_pixel(fuxcoord);
@@ -2088,27 +2194,27 @@ float4 LinearizePS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	}
 	float3 c=c1;
 	float intera=1.0;
-	float gamma_in=clamp(gamma_i,1.0,5.0);
+	float gamma_in=gamma_i;
 	float m1=max(max(c1.r,c1.g),c1.b);
 	float m2=max(max(c2.r,c2.g),c2.b);
 	float3 df=abs(c1-c2);
 	float d=max(max(df.r,df.g),df.b);
-	if(interm==2.0)d=lerp(0.1*d,10.0*d,step(m1/(m2+0.0001),m2/(m1+0.0001)));
+	if(interm==2.0) d=lerp(0.1*d,10.0*d,step(m1/(m2+0.0001),m2/(m1+0.0001)));
 	float r=m1;
 	float yres_div=1.0;if(intres>1.25)yres_div=intres;
-	bool hscans =(hiscan>0.5);
+	bool hscans=(hiscan>0.5);
 	if(interr<=OrgSize.y/yres_div&&interm>0.5&&intres!=1.0&&intres!=0.5||hscans)
 	{
 	intera=0.25;
-	float liine_no=clamp(floor( mod(OrgSize.y*fuxcoord.y,2.0)),0.0,1.0);
-	float frame_no=clamp(floor( mod(float(framecount),2.0)),0.0,1.0);
+	float liine_no=floor( mod(OrgSize.y*fuxcoord.y,2.0));
+	float frame_no=floor( mod(float(framecount),2.0));
 	float ii=abs(liine_no-frame_no);
 	if(interm< 3.5)
 	{
 	c2=plant(lerp(c2,c2*c2,iscans),max(max(c2.r,c2.g),c2.b));
-	r=clamp(max(m1*ii,(1.0-iscanb)*min(m1,m2)),0.0,1.0);
+	r=max(m1*ii,(1.0-iscanb)*min(m1,m2));
 	c=plant(lerp(lerp(c1,c2,min(lerp(m1,1.0-m2,min(m1,1.0-m1))/(d+0.00001),1.0)),c1,ii),r);
-	if(interm==3.0)c=(1.0-0.5*iscanb)*lerp(c2,c1,ii);
+	if(interm==3.0) c=(1.0-0.5*iscanb)*lerp(c2,c1,ii);
 	}
 	if(interm==4.0){c=plant(lerp(c,c*c,0.5*iscans),max(max(c.r,c.g),c.b))*(1.0-0.5*iscanb);
 	}
@@ -2123,19 +2229,19 @@ float4 LinearizePS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 
 float4 HGaussianPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float4 GaussSize=float4(OrgSize.x,OrgSize.y,OrgSize.z,OrgSize.w)*lerp(1.0.xxxx,float4(FINE_GAUSS,FINE_GAUSS,1.0/FINE_GAUSS,1.0/FINE_GAUSS),min(FINE_GAUSS-1.0,1.0));
-	float f=frac(GaussSize.x*texcoord.x);
+	float4 AdvSize=float4(OrgSize.x,OrgSize.y,OrgSize.z,OrgSize.w)*float4(FINE_GAUSS,FINE_GAUSS,1.0/FINE_GAUSS,1.0/FINE_GAUSS);
+	float f=frac(AdvSize.x*texcoord.x);
 	f=0.5-f;
-	float2 tex=floor(GaussSize.xy*texcoord)*GaussSize.zw+0.5*GaussSize.zw;
+	float2 tex=floor(AdvSize.xy*texcoord)*AdvSize.zw+0.5*AdvSize.zw;
 	float3 color=0.0;
-	float2 dx=float2(GaussSize.z ,0.0);
+	float2 dx=float2(AdvSize.z ,0.0);
 	float3 pixel;
 	float w;
 	float wsum=0.0;
 	float n=-SIZEH;
 	do
 	{
-	pixel=COMPAT_TEXTURE(NTSC_S08,tex+n*dx).rgb;
+	pixel=texCD(NTSC_S08,tex+n*dx).rgb;
 	if(m_glow>0.5)
 	{
 	pixel=max(pixel-m_glow_cutoff,0.0);
@@ -2145,207 +2251,208 @@ float4 HGaussianPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=SIZEH);
+	}
+	while(n<=SIZEH);
 	color=color/wsum;
 	return float4(color,1.0);
 }
 
 float4 VGaussianPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float4 GaussSize=float4(SrcSize.x,OrgSize.y,SrcSize.z,OrgSize.w)*lerp(1.0.xxxx,float4(FINE_GAUSS,FINE_GAUSS,1.0/FINE_GAUSS,1.0/FINE_GAUSS),min(FINE_GAUSS-1.0,1.0));
-	float f=frac(GaussSize.y*texcoord.y);
+	float4 AdvSize=float4(SrcSize.x,OrgSize.y,SrcSize.z,OrgSize.w)*float4(FINE_GAUSS,FINE_GAUSS,1.0/FINE_GAUSS,1.0/FINE_GAUSS);
+	float f=frac(AdvSize.y*texcoord.y);
 	f=0.5-f;
-	float2 tex=floor(GaussSize.xy*texcoord)*GaussSize.zw+0.5*GaussSize.zw;
+	float2 tex=floor(AdvSize.xy*texcoord)*AdvSize.zw+0.5*AdvSize.zw;
 	float3 color=0.0;
-	float2 dy=float2(0.0,GaussSize.w );
+	float2 dy=float2(0.0,AdvSize.w );
 	float3 pixel;
 	float w;
 	float wsum=0.0;
 	float n=-SIZEV;
 	do
 	{
-	pixel=COMPAT_TEXTURE(NTSC_S10,tex+n*dy).rgb;
+	pixel=texCD(NTSC_S10,tex+n*dy).rgb;
 	w=gauss_v(n+f);
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=SIZEV);
+	}
+	while(n<=SIZEV);
 	color=color/wsum;
 	return float4(color,1.0);
 }
 
 float4 BloomHorzPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float4 BloomSize=float4(OrgSize.x,OrgSize.y,OrgSize.z,OrgSize.w)*lerp(1.0.xxxx,float4(FINE_BLOOM,FINE_BLOOM,1.0/FINE_BLOOM,1.0/FINE_BLOOM),min(FINE_BLOOM-1.0,1.0));
-	float f=frac(BloomSize.x*texcoord.x);
+	float4 AdvSize=float4(OrgSize.x,OrgSize.y,OrgSize.z,OrgSize.w)*float4(FINE_BLOOM,FINE_BLOOM,1.0/FINE_BLOOM,1.0/FINE_BLOOM);
+	float f=frac(AdvSize.x*texcoord.x);
 	f=0.5-f;
-	float2 tex=floor(BloomSize.xy*texcoord)*BloomSize.zw+0.5*BloomSize.zw;
+	float2 tex=floor(AdvSize.xy*texcoord)*AdvSize.zw+0.5*AdvSize.zw;
 	float4 color=0.0;
-	float2 dx=float2(BloomSize.z ,0.0);
+	float2 dx=float2(AdvSize.z ,0.0);
 	float4 pixel;
 	float w;
 	float wsum=0.0;
 	float n=-SIZEX;
 	do
 	{
-	pixel=COMPAT_TEXTURE(NTSC_S08,tex+n*dx);
+	pixel=texCD(NTSC_S08,tex+n*dx);
 	w=bloom_h(n+f);
 	pixel.a =max(max(pixel.r,pixel.g),pixel.b);
 	pixel.a*=pixel.a*pixel.a;
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=SIZEX);
+	}
+	while(n<=SIZEX);
 	color=color/wsum;
 	return float4(color.rgb,pow(color.a,0.333333));
 }
 
 float4 BloomVertPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float4 BloomSize=float4(SrcSize.x,OrgSize.y,SrcSize.z,OrgSize.w)*lerp(1.0.xxxx,float4(FINE_BLOOM,FINE_BLOOM,1.0/FINE_BLOOM,1.0/FINE_BLOOM),min(FINE_BLOOM-1.0,1.0));
-	float f=frac(BloomSize.y*texcoord.y);
+	float4 AdvSize=float4(SrcSize.x,OrgSize.y,SrcSize.z,OrgSize.w)*float4(FINE_BLOOM,FINE_BLOOM,1.0/FINE_BLOOM,1.0/FINE_BLOOM);
+	float f=frac(AdvSize.y*texcoord.y);
 	f=0.5-f;
-	float2 tex=floor(BloomSize.xy*texcoord)*BloomSize.zw+0.5*BloomSize.zw;
+	float2 tex=floor(AdvSize.xy*texcoord)*AdvSize.zw+0.5*AdvSize.zw;
 	float4 color=0.0;
-	float2 dy=float2(0.0,BloomSize.w );
+	float2 dy=float2(0.0,AdvSize.w );
 	float4 pixel;
 	float w;
 	float wsum=0.0;
 	float n=-SIZEY;
 	do
 	{
-	pixel=COMPAT_TEXTURE(NTSC_S12,tex+n*dy);
+	pixel=texCD(NTSC_S12,tex+n*dy);
 	w=bloom_v(n+f);
 	pixel.a*=pixel.a*pixel.a;
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=SIZEY);
+	}
+	while(n<=SIZEY);
 	color=color/wsum;
 	return float4(color.rgb,pow(color.a,0.175000));
 }
 
 float4 NTSC_TV1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float2 prescalex=float2(tex2Dsize(NTSC_S08,0))/OrgSize.xy;
-	float4 PALSize=OrgSize*float4(prescalex.x,prescalex.y,1.0/prescalex.x,1.0/prescalex.y);
-	float f=frac(PALSize.x*fuxcoord.x);
+	float f=frac(LumSize.x*fuxcoord.x);
 	f=0.5-f;
-	float2 tex=floor(PALSize.xy*fuxcoord)*PALSize.zw+0.5*PALSize.zw;
+	float2 tex=floor(LumSize.xy*fuxcoord)*LumSize.zw+0.5*LumSize.zw;
 	float3 color=0.0.xxx;
-	float scolor=0.0;
-	float2 dx=float2(PALSize.z ,0.0);
+	float solor=0.0;
+	float2 dx=float2(LumSize.z ,0.0);
 	float3 pixel;
 	float w=0.0;
-	float swsum=0.0;
+	float swum=0.0;
 	float wsum=0.0;
-	float xs=prescalex.x*0.5;
-	float hsharpness=HSHARPNESS*xs;
+	float xs=2.0*0.50;
+	float hsharpness=HSHARPNESS*xs*internal_res;
 	float3 cmax=0.0.xxx;
 	float3 cmin=1.0.xxx;
-	float sharp=crthd_h(hsharpness,xs)*S_SHARPH;
+	float sharp=crthd_h(hsharpness,xs) *S_SHARP;
 	float maxsharp=MAXS;
 	float FPR=hsharpness;
+	float FPRi=1.0/hsharpness;
 	float fpx=0.0;
 	float sp=0.0;
 	float sw=0.0;
 	float ts=0.025;
 	float3 luma=float3(0.2126,0.7152,0.0722);
 	float LOOPSIZE=ceil(2.0*FPR);
-	float CLPSIZE=round(2.0*LOOPSIZE/3.0);
 	float n=-LOOPSIZE;
 	do
 	{
-	pixel=COMPAT_TEXTURE(NTSC_S08,tex+n*dx).rgb;
-	sp=max(max(pixel.r,pixel.g),pixel.b);
+	pixel=texCD(NTSC_S08,tex+n*dx).rgb;
 	w=crthd_h(n+f,xs)-sharp;
-	fpx=abs(n+f-sign(n)*FPR)/FPR;
-	if(abs(n)<=CLPSIZE){cmax=max(cmax,pixel); cmin=min(cmin,pixel);}
-	if(w<0.0)w=clamp(w,lerp(-maxsharp,0.0,pow(clamp(fpx,0.0,1.0),HSHARP)),0.0);
+	fpx=(abs(n+f)-FPR)*FPRi;
+	if(w<0.0)w=max(w,lerp(-maxsharp,0.0,pow(clamp(fpx,0.0,1.0),SHARP))); else
+	{
+	cmax=max(cmax,pixel);cmin=min(cmin,pixel);sw=w*(dot(pixel,luma)+ts);
+	sp=max(max(pixel.r,pixel.g),pixel.b);
+	solor=solor+sw*sp;
+	swum=swum+sw;
+	}
 	color=color+w*pixel;
 	wsum=wsum+w;
-	sw=max(w,0.0)*(dot(pixel,luma)+ts);
-	scolor=scolor+sw*sp;
-	swsum=swsum+sw;
 	n=n+1.0;
 	}while(n<=LOOPSIZE);
-	color =color/wsum;
-	scolor=scolor/swsum;
-	color =clamp(lerp(clamp(color,cmin,cmax),color,HARNG),0.0,1.0);
-	scolor=clamp(lerp(max(max(color.r,color.g),color.b),scolor,spike),0.0,1.0);
-	return float4(color,scolor);
+	color=color/wsum;
+	solor=solor/swum;
+	color=clamp(lerp( clamp (color,cmin,cmax),color,SSRNG),0.0,1.0);
+	solor=clamp(lerp(max(max(color.r,color.g),color.b),solor,spike),0.0,1.0);
+	return float4(color,solor);
 }
 
 float4 NTSC_TV2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float prescalex=tex2Dsize(NTSC_S08,0).x/(2.0*OrgSize.x);
-	float4 PALSize=OrgSize*float4(prescalex,1.0,1.0/prescalex,1.0);
-	float gamma_in=1.0/COMPAT_TEXTURE(NTSC_S08,0.25).a;
-	float lum=COMPAT_TEXTURE(NTSC_S07,0.5).a;
-	float intera=COMPAT_TEXTURE(NTSC_S08,float2(0.75,0.25)).a;
+	float gamma_in=1.0/texCD(NTSC_S08,float2(0.25,0.25)).a;
+	float lum=texCD(NTSC_S07,float2(0.5,0.5)).a;
+	float intera=texCD(NTSC_S08,float2(0.75,0.25)).a;
 	bool hscans=(hiscan>0.5);
 	bool interb=(((intera<0.35)||(no_scanlines>0.025))&&!hscans);
-	PALSize*=float4(2.0,1.0,0.5,1.0);
-	float SourceY=PALSize.y;
+	float4 AdvSize= LumSize;
+	float SourceY=AdvSize.y;
 	float sy=1.0;
-	if( intres==1.0)sy=max(floor(SourceY/199.0),1.0);
+	if( intres==1.0)sy=max(round(SourceY/224.0),1.0);
 	if( intres>0.25&&intres!=1.0)sy=intres;
-	PALSize*=float4(1.0,1.0/sy,1.0,sy);
-	float2 lexcoord = fuxcoord.xy;
-	if(IOS> 0.0&&!interb)
+	AdvSize*=float4(1.0,1.0/sy,1.0,sy);
+	float2 lexcoord=fuxcoord.xy;
+	if(IOS> 0.0&& !interb)
 	{
 	float2 ofactor= OptSize.xy/OrgSize.xy;
-	float2 intfactor=(IOS<2.5)?floor(ofactor):ceil(ofactor);
-	float2 diff=ofactor/intfactor;
+	float2 ifactor=(IOS<2.5)? floor(ofactor):ceil(ofactor);
+	float2 diff=ofactor/ifactor;
 	float scan=diff.y;
 	lexcoord=overscan(lexcoord,scan,scan);
-	if(IOS==1.0||IOS==3.0)lexcoord=float2(fuxcoord.x,lexcoord.y);
+	if(IOS==1.0||IOS==3.0) lexcoord=float2(fuxcoord.x,lexcoord.y);
 	}
 	float factor=1.0+(1.0-0.5*OS)*blm_2/100.0-lum*blm_2/100.0;
 	lexcoord=overscan(lexcoord,factor,factor);
 	lexcoord=overscan(lexcoord,(OrgSize.x-overscanx)/OrgSize.x,(OrgSize.y-overscany)/OrgSize.y);
-	float2 pos=warp(lexcoord);
+	float2 pos = warp(lexcoord);
 	float2 coffset=0.5;
-	float2 ps=PALSize.zw;
-	float2 OGL2Pos=pos*PALSize.xy-coffset;
+	float2 ps=AdvSize.zw;
+	float2 OGL2Pos=pos*AdvSize.xy-coffset;
 	float2 fp=frac(OGL2Pos);
 	float2 dx=float2(ps.x,0.0);
 	float2 dy=float2(0.0,ps.y);
 	float f=fp.y;
 	float2 pC4=floor(OGL2Pos)*ps+0.5*ps;
 	pC4.x=pos.x;
-	if( intres==0.5&&prescalex<1.5)pC4.y=floor(pC4.y*OrgSize.y)*OrgSize.w+0.5*OrgSize.w;
-	if( interb&&no_scanlines<0.025||hscans)pC4.y=pos.y;else
-	if( interb)pC4.y=pC4.y+smoothstep(0.40-0.5*no_scanlines,0.60+0.5*no_scanlines,f)*PALSize.w;
-	float3  color1=COMPAT_TEXTURE(NTSC_S09,pC4).rgb;
-	float3 scolor1=COMPAT_TEXTURE(NTSC_S09,pC4).aaa;
+	if( intres==0.5<1.5)pC4.y=floor(pC4.y*OrgSize.y)*OrgSize.w+0.5*OrgSize.w;
+	if( interb&&no_scanlines<0.025|| hscans) pC4.y=pos.y;else
+	if( interb) pC4.y=pC4.y+smoothstep(0.40-0.5*no_scanlines,0.60+0.5*no_scanlines,f)*AdvSize.w;
+	float3 color1=texCD(NTSC_S09,pC4).rgb;
+	float3 solor1=texCD(NTSC_S09,pC4).aaa;
 	if(!interb)color1=pow(color1,scangamma/gamma_in);
 	pC4+=dy;
-	if( intres==0.5&&prescalex<1.5)pC4.y=floor((pos.y+0.33*dy.y)*OrgSize.y)*OrgSize.w+0.5*OrgSize.w;
-	float3  color2=COMPAT_TEXTURE(NTSC_S09,pC4).rgb;
-	float3 scolor2=COMPAT_TEXTURE(NTSC_S09,pC4).aaa;
+	if( intres==0.5<1.5)pC4.y=floor((pos.y+0.33*dy.y)*OrgSize.y)*OrgSize.w+0.5*OrgSize.w;
+	float3 color2=texCD(NTSC_S09,pC4).rgb;
+	float3 solor2=texCD(NTSC_S09,pC4).aaa;
 	if(!interb)color2=pow(color2,scangamma/gamma_in);
 	float3 ctmp=color1;float w3=1.0;float3 color=color1;
 	float3 one=1.0;
-	if( hscans){color2=color1;scolor2=scolor1;}
-	if(!interb||hscans)
+	if( hscans){color2=color1;solor2=solor1;}
+	if(!interb|| hscans)
 	{
-	float3 luma=float3(0.2126,0.7152,0.0722);
-	float ssub=ssharp*max(abs(scolor1.x-scolor2.x),abs(dot(color1,luma)-dot(color2,luma)));
-	float shape1=lerp(scanline1,scanline2+ssub*scolor1.x*35.0,    f);
-	float shape2=lerp(scanline1,scanline2+ssub*scolor2.x*35.0,1.0-f);
-	float wt1=st0(     f);
-	float wt2=st0(1.0- f);
-	float3  color0= color1*wt1+ color2*wt2;
-	float3 scolor0=scolor1*wt1+scolor2*wt2;
-	ctmp=color0/(wt1+wt2);
-	float3 sctmp=scolor0/(wt1+wt2);
+	float shape1=lerp(scanline1,scanline2,    f);
+	float shape2=lerp(scanline1,scanline2,1.0-f);
+	float wt1=st0(    f);
+	float wt2=st0(1.0-f);
+	float3 color0=color1*wt1+color2*wt2;
+	float3 solor0=solor1*wt1+solor2*wt2;
+	ctmp = color0/(wt1+wt2);
+	float3 stmp=solor0/(wt1+wt2);
+	if(abs(rolling_scan)>0.005){color1=ctmp;color2=ctmp;solor1=stmp;solor2=stmp;}
 	float3 w1,w2;
-	float3 cref1=lerp(sctmp,scolor1,beam_size);float creff1=pow(max(max(cref1.r,cref1.g),cref1.b),scan_falloff);
-	float3 cref2=lerp(sctmp,scolor2,beam_size);float creff2=pow(max(max(cref2.r,cref2.g),cref2.b),scan_falloff);
+	float3 cref1=lerp(stmp,solor1,beam_size);float creff1=pow(max(max(cref1.r,cref1.g),cref1.b),scan_falloff);
+	float3 cref2=lerp(stmp,solor2,beam_size);float creff2=pow(max(max(cref2.r,cref2.g),cref2.b),scan_falloff);
 	if(tds>0.5){shape1=lerp(scanline2,shape1,creff1);shape2=lerp(scanline2,shape2,creff2);}
-	float f1=     f;
-	float f2=1.0- f;
+	float scanpix=OrgSize.y/OptSize.y;
+	float f1=frac(f-rolling_scan*float(framecount)*scanpix);
+	float f2=1.0-f1;
 	float m1=max(max(color1.r,color1.g),color1.b)+eps;
 	float m2=max(max(color2.r,color2.g),color2.b)+eps;
 	cref1=color1/m1;
@@ -2357,7 +2464,7 @@ float4 NTSC_TV2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	{w1=sw2(f1,creff1,shape1,cref1);w2=sw2(f2,creff2,shape2,cref2);}
 	float3 w3=w1+w2;
 	float wf1=max(max(w3.r,w3.g),w3.b);
-	if(wf1> 1.0) {wf1=1.0/wf1; w1*=wf1, w2*=wf1;}
+	if(wf1>1.0){wf1=1.0/wf1;w1*=wf1,w2*=wf1;}
 	if(abs(clp)>0.005)
 	{
 	sy=m1; one=(clp>0.0)?w1:1.0.xxx;
@@ -2367,57 +2474,57 @@ float4 NTSC_TV2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	sat=1.0001-min(min(cref2.r,cref2.g),cref2.b);
 	color2=lerp(color2,plant(pow(color2,0.70.xxx-0.325*sat),sy),pow(sat,0.3333)*one*abs(clp));
 	}
-	color=(gc(color1)*w1+gc(color2)*w2);
+	color=gc1(color1)*w1+gc1(color2)*w2;
 	color=min(color,1.0);
 	}
 	if( interb)
 	{
-	color=gc(color1);
+	color=gc1(color1);
 	}
-	float colmx=max(max(ctmp.r,ctmp.g),ctmp.b);
+	float colmx=max( max(ctmp.r,ctmp.g),ctmp.b);
 	if(!interb)color=pow(color,gamma_in/scangamma);
 	return float4(color,colmx);
 }
 
 float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Target
 {
-	float gamma_in=1.0/COMPAT_TEXTURE(NTSC_S08,0.25).a;
-	float lum=COMPAT_TEXTURE(NTSC_S07,0.5).a;
-	float intera=COMPAT_TEXTURE(NTSC_S08,float2(0.75,0.25)).a;
+	float gamma_in=1.0/texCD(NTSC_S08,float2(0.25,0.25)).a;
+	float lum=texCD(NTSC_S07,float2(0.5,0.5)).a;
+	float intera=texCD(NTSC_S08,float2(0.75,0.25)).a;
 	bool interb=((intera<0.35||no_scanlines>0.025)&&(hiscan<0.5));
-	float2 lexcoord = fuxcoord.xy;
-	if(IOS> 0.0&&!interb)
+	float2 lexcoord=fuxcoord.xy;
+	if(IOS> 0.0&& !interb)
 	{
 	float2 ofactor= OptSize.xy/OrgSize.xy;
-	float2 intfactor=(IOS<2.5)?floor(ofactor):ceil(ofactor);
-	float2 diff=ofactor/intfactor;
+	float2 ifactor=(IOS<2.5)? floor(ofactor):ceil(ofactor);
+	float2 diff=ofactor/ifactor;
 	float scan=diff.y;
 	lexcoord=overscan(lexcoord,scan,scan);
-	if(IOS==1.0||IOS==3.0)lexcoord=float2(fuxcoord.x,lexcoord.y);
+	if(IOS==1.0||IOS==3.0) lexcoord=float2(fuxcoord.x,lexcoord.y);
 	}
 	float factor=1.0+(1.0-0.5*OS)*blm_2/100.0-lum*blm_2/100.0;
 	lexcoord=overscan(lexcoord,factor,factor);
 	lexcoord=overscan(lexcoord,(OrgSize.x-overscanx)/OrgSize.x,(OrgSize.y-overscany)/OrgSize.y);
-	float2 pos0=warp(fuxcoord.xy);
-	float2 pos1=fuxcoord.xy;
-	float2 pos=warp(lexcoord);
-	float3 color=COMPAT_TEXTURE(NTSC_S14,pos1).rgb;
-	float3 Bloom=COMPAT_TEXTURE(NTSC_S13,pos).rgb;
-	float3 Glow=COMPAT_TEXTURE(NTSC_S11,pos).rgb;
-	if((abs(deconrx)+abs(deconry)+abs(decongx)+abs(decongy)+abs(deconbx)+abs(deconby))>0.2)
-	bring_pixel(color,Bloom,Glow,pos1,pos);
+	float2 pos0= warp(fuxcoord);
+	float2 pos1= fuxcoord;
+	float2 pos = warp(lexcoord);
+	float3 color=texCD(NTSC_S14,pos1).rgb;
+	float3 Bloom=texCD(NTSC_S13,pos ).rgb;
+	float3 Glow =texCD(NTSC_S11,pos ).rgb;
+	if((abs(deconrx)+abs(deconry)+abs(decongx)+abs(decongy)+abs(deconbx)+abs(deconby))>0.2) bring_pixel(color,Bloom,Glow,pos1,pos);
 	float cm=igc(max(max(color.r,color.g),color.b));
-	float mx1=COMPAT_TEXTURE(NTSC_S14,pos1   ).a;
+	float mx1=texCD(NTSC_S14,pos1   ).a;
 	float colmx=max(mx1,cm);
-	float w3=min((cm+0.0001)/(colmx+0.0005),1.0);if(interb)w3=1.00;
+	float w3=min((max((cm-0.0005)*1.0005,0.0)+0.0001)/(colmx+0.0005),1.0);if(interb)w3=1.0;
 	float2 dx=float2(0.001,0.0);
-	float mx0=COMPAT_TEXTURE(NTSC_S14,pos1-dx).a;
-	float mx2=COMPAT_TEXTURE(NTSC_S14,pos1+dx).a;
+	float mx0=texCD(NTSC_S14,pos1-dx).a;
+	float mx2=texCD(NTSC_S14,pos1+dx).a;
 	float mxg=max(max(mx0,mx1),max(mx2,cm));
 	float mx=pow(mxg,1.40/gamma_in);
+	float cx=pow(colmx,1.40/gamma_in);
 	dx=float2(OrgSize.z,0.0)*0.25;
-	mx0=COMPAT_TEXTURE(NTSC_S14,pos1-dx).a;
-	mx2=COMPAT_TEXTURE(NTSC_S14,pos1+dx).a;
+	mx0=texCD(NTSC_S14,pos1-dx).a;
+	mx2=texCD(NTSC_S14,pos1+dx).a;
 	float mb=(1.0-min(abs(mx0-mx2)/(0.5+mx1),1.0));
 	float3 orig1=color;
 	float3 one=1.0;
@@ -2429,7 +2536,7 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float mask_compensate=frac(mwidth);
 	if(shadow_msk> 0.5)
 	{
-	float2 maskcoord=fracoord.xy* 1.00001;
+	float2 maskcoord= fracoord.xy;
 	float2 scoord=maskcoord;
 	mwidth=floor(mwidth)*masksize;
 	float swidth=mwidth;
@@ -2460,17 +2567,17 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	if(bsm_offset)sm_offset=-1.0;
 	}
 	swidth=round(swidth*mscale);
-	smask=slt_mask(scoord+float2(sm_offset,0.0),mx,swidth);
-	smask=clamp(smask+lerp(smask_mit,0.0,min(w3,pow(w3*max(max(orig1.r,orig1.g),orig1.b),0.33333))),0.0,1.0);
+	smask =slt_mask(scoord+float2(sm_offset,0.0),mx,swidth);
+	smask =clamp(smask+lerp(smask_mit,0.0,w3*pow(colmx,0.3)),0.0,1.0);
 	emask =cmask;
 	cmask*=smask;
 	dmask =cmask;
 	if(abs(mask_bloom)>0.025)
 	{
-	float maxbl=max(max(max(Bloom.r,Bloom.g),Bloom.b),mxg);
-	maxbl=maxbl*max(lerp(1.0,2.0-colmx,bloom_dist),0.0);
-	if(mask_bloom>0.025)cmask=max(min(cmask+maxbl*mask_bloom,1.0),cmask);else
-	cmask=max(lerp(cmask,cmask*(1.0-0.5*maxbl)+plant(pow(Bloom,0.35.xxx),maxbl),-mask_bloom),cmask);
+	float maxbl=max( max(max(Bloom.r,Bloom.g),Bloom.b),mxg);
+	maxbl=maxbl*max(lerp(1.0,2-colmx,bloom_dist),0.0);
+	if(mask_bloom>0.025) cmask= max(min(cmask +maxbl*mask_bloom,1),cmask); else
+	cmask=max(lerp(cmask,cmask*(1.0-0.5*maxbl)+plant(pow( Bloom,0.35.xxx),maxbl),-mask_bloom),cmask);
 	}
 	color=pow(color,mask_gamma/gamma_in);
 	color=color*cmask;
@@ -2478,33 +2585,31 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=pow(color,gamma_in/mask_gamma);
 	cmask=min(cmask,1.0);
 	dmask=min(dmask,1.0);
+	float mm=max(-2.75*cx*(cx-1.0)-lerp(0.075,0.165,cx),0.0);color=max(color,orig1*maskmid*mm);
 	}
-	float dark_compensate=lerp(max(clamp(lerp(mcut,maskstr,mx),0.0,1.0)-1.0+mask_compensate,0.0)+1.0,1.0,mx); if(shadow_msk< 0.5) dark_compensate=1.0;
+	float dark_compensate=lerp(max(clamp(lerp(mcut,maskstr,mx),0.0,1.0)-1.0+ mask_compensate,0.0)+1.0,1.0,mx); if(shadow_msk< 0.5) dark_compensate=1.0;
 	float bb=lerp(brightboost1,brightboost2,mx)* dark_compensate; color*=bb;
-	float3 Ref=COMPAT_TEXTURE(NTSC_S08,pos).rgb;
-	float maxb=COMPAT_TEXTURE(NTSC_S13,pos).a;
-	float vig=COMPAT_TEXTURE(NTSC_S02,clamp(pos,0.0+0.5*OrgSize.zw,1.0 -0.5*OrgSize.zw)).a;
-	float3 bcmask=lerp(one,cmask,b_mask);
-	float3 hcmask=lerp(one,cmask,h_mask);
-	float3 Bloom1=Bloom;
+	float3 Ref=texCD(NTSC_S08,pos).rgb;
+	float maxb=texCD(NTSC_S13,pos).a;
+	float vig =texCD(NTSC_S02,clamp(pos,0.0+0.5*OrgSize.zw,1.0-0.5*OrgSize.zw)).a;
+	float3 bcmask=lerp(one,dmask,b_mask);
+	float3 hcmask=lerp(one,dmask,h_mask);
+	float3 Bloomy=Bloom;
 	if(abs(blm_1)>0.025)
 	{
-	if(blm_1<-0.01)Bloom1=plant(Bloom,maxb);
-	Bloom1= min(Bloom1*(orig1+color), max(0.5*(colmx+orig1-color),0.001*Bloom1));
-	Bloom1=0.5*(Bloom1+lerp(Bloom1,lerp(colmx*orig1,Bloom1,0.5),1.0-color));
-	Bloom1= bcmask*Bloom1*max(lerp(1.0,2.0-colmx,bloom_dist),0.0);
-	color=pow(pow(color,mask_gamma/gamma_in)+abs(blm_1)*pow(Bloom1,mask_gamma/gamma_in),gamma_in/mask_gamma);
+	if(blm_1<-0.01)Bloomy=plant(Bloom,maxb);
+	Bloomy= min(Bloomy*(orig1+color),max(0.5*(colmx+orig1-color),0.001*Bloomy));
+	Bloomy=0.5*(Bloomy+lerp(Bloomy,lerp(colmx*orig1,Bloomy,0.5),1.0-color));
+	Bloomy= bcmask*Bloomy*max(lerp(1.0,2.0-colmx,bloom_dist),0);
+	color=pow(pow(color,mask_gamma/gamma_in)+abs(blm_1)*pow( Bloomy,mask_gamma/gamma_in),gamma_in/mask_gamma);
 	}
-	if(!interb)color=declip(min(color,1.0),lerp(1.0,w3,0.6));
 	if(halation> 0.01)
 	{
-	Bloom=0.5*(Bloom+Bloom*Bloom);
-	float mbl=max(max(Bloom.r,Bloom.g),Bloom.b);
-	float mxh=colmx+colmx*colmx;
-	Bloom=plant(Bloom,max(1.25*(mbl-0.1375),0.165*mxh*(1.0+w3)));
-	Bloom=max((2.0*lerp(maxb*maxb,maxb,colmx)-0.5*max(max(Ref.r,Ref.g),Ref.b)),0.25)*Bloom;
-	Bloom=min((2.5-colmx+0.5*color)*plant(0.375+orig1,lerp(0.5*(1.0+w3),(0.50+w3)/1.5,colmx))*hcmask*Bloom,1.0-color);
-	color=pow(pow(color,mask_gamma/gamma_in)+halation*pow(Bloom,mask_gamma/gamma_in),gamma_in/mask_gamma);
+	Bloom= 0.5*(Bloom+Bloom*Bloom);float mbl=max(max(Bloom.r,Bloom.g),Bloom.b);float mxh=0.5*(colmx+colmx*colmx);
+	mbl=lerp(lerp(mxh,lerp( mxh,mbl,mbl),colmx),mbl,mb);
+	Bloom=plant(Bloom,lerp(sqrt(mbl*mxh),max((mbl-0.15*(1.0-colmx)),0.4*mxh),pow(colmx,0.25)))*lerp(0.425,1.0,colmx);
+	Bloom=(3.0-colmx-color)*plant(0.325+orig1/w3,0.5*(1.0+w3))*hcmask*Bloom;
+	color=pow(pow(color,mask_gamma/gamma_in)+ halation *pow( Bloom ,mask_gamma/gamma_in),gamma_in/mask_gamma);
 	}else
 	if(halation<-0.01)
 	{
@@ -2512,18 +2617,16 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	Bloom=plant(Bloom+Ref+orig1+Bloom*Bloom*Bloom,min(mbl*mbl,0.75));
 	color=color+2.0*lerp(1.0,w3,0.5*colmx)*hcmask*Bloom*(-halation);
 	}
-	float w=0.25+0.60*lerp(w3,1.0,sqrt(colmx));
-	if(smoothmask>0.5)
-	{
-	color=min(color,1.0); color=max(min(color/w3,1.0)*w3, min(orig1*bb,color*(1.0-w3)));
-	}
+	color=min(color,1.0);
+	color=gc2(color,w3 );
+	if(smoothmask>0.125){float w4=pow(w3,0.425+0.3*smoothmask);w4=max(w4-0.175*colmx*smoothmask,0.2);color=lerp(min(color/w4,plant(orig1,1.0+0.175*colmx*smoothmask))*w4,color,w4);}
 	if(m_glow<0.5)Glow=lerp(Glow,0.25*color,colmx);else
 	{
 	float3 orig2=plant(orig1+0.001*Ref,1.0); maxb=max(max(Glow.r,Glow.g),Glow.b);
 	Bloom=plant(Glow,1.0);Ref=abs(orig2-Bloom);
 	mx0=max(max(orig2.r,orig2.g),orig2.b)-min(min(orig2.r,orig2.g),orig2.b);
 	mx2=max(max(Bloom.r,Bloom.g),Bloom.b)-min(min(Bloom.r,Bloom.g),Bloom.b);
-	Bloom=lerp(maxb*min(Bloom,orig2),w*lerp(lerp(Glow,max(max(Ref.r,Ref.g),Ref.b)*Glow,max(mx,mx0)),lerp(color,Glow,mx2),max(mx0,mx2)*Ref),min(sqrt((1.10-mx0)*(0.10+mx2)),1.0));
+	Bloom=lerp(maxb*min(Bloom,orig2),lerp(lerp(Glow,max(max(Ref.r,Ref.g),Ref.b)*Glow,max(mx,mx0)),lerp(color,Glow,mx2),max(mx0,mx2)*Ref),min(sqrt((1.10-mx0)*(0.10+mx2)),1.0));
 	if(m_glow>1.5)Glow=lerp(0.5*Glow*Glow,Bloom,Bloom);
 	Glow=lerp(m_glow_low*Glow,m_glow_high*Bloom,pow(colmx,m_glow_dist/gamma_in));
 	}
@@ -2531,18 +2634,30 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	{
 	if(glow >=0.0)color=color+0.5*Glow*glow;else color=color+abs(glow)*min(emask*emask,1.0)*Glow;}else
 	{
-	float3 fmask= clamp(lerp(one,dmask,m_glow_mask),0.0,1.0);
+	float3 fmask=clamp(lerp(one,dmask,m_glow_mask),0.0,1.0);
 	color=color+abs(glow)*fmask*Glow;
 	}
 	color=min(color,1.0);
-	color=min(color,max(orig1,color)* lerp(one,dmask,mclip));
+	if(edgemask>0.05)
+	{
+	mx0=texCD(NTSC_S14,pos1-dx).a;mx0=texCD(NTSC_S14,pos1-dx*(1.0-0.75*sqrt(mx0))).a;
+	mx2=texCD(NTSC_S14,pos1+dx).a;mx2=texCD(NTSC_S14,pos1+dx*(1.0-0.75*sqrt(mx2))).a;
+	float mx3=texCD(NTSC_S14,pos1-4.0*dx).a;
+	float mx4=texCD(NTSC_S14,pos1+4.0*dx).a;
+	mx4=max(pow(abs(mx3-mx4),0.55-0.40*cx),min(max(mx3,mx4)/min(0.1+cx,1.0),1.0));
+	mb=(1.0-abs(pow(mx0,1.0-0.65*mx2)-pow(mx2,1.0-0.65*mx0)));
+	mb=mx4*edgemask*(1.0001-mb*mb);float3 temp=lerp(color,orig1,mb);
+	color=max(temp+lerp(3.5*mb*lerp(1.625*temp,temp,cx),0.0.xxx,pow(color,0.75.xxx -0.5*colmx)),color);
+	}
+	color=color* lerp(1.0,lerp(0.5*(1.0+w3),w3,mx),pr_scan);
+	color=min(color,max(orig1,color)*lerp(one,dmask,mclip));
 	color=pow(color,1.0/gamma_o);
-	float rc=0.6*sqrt(max(max(color.r,color.g),color.b))+0.4;
+	float q=0.6*sqrt(max(max(color.r,color.g),color.b))+0.4;
 	if(abs(addnoised)>0.01)
 	{
 	float3 noise0=noise(float3(floor(OptSize.xy*fuxcoord/noiseresd),float(framecount)));
-	if(noisetype<0.5)color=lerp(color,noise0,0.25*abs(addnoised)*rc);else
-	color=min(color*lerp(1.0,1.5*noise0.x,0.5*abs(addnoised)),1.0);
+	if(noisetype<0.5)color=lerp(color,noise0,0.25*abs(addnoised)*q);else
+	color=min(color* lerp(1.0,1.5*noise0.x,0.5*abs(addnoised)),1.0);
 	}
 	colmx=max(max(orig1.r,orig1.g),orig1.b);
 	color=color+bmask*lerp(emask,0.125*(1.0-colmx)*color,min(20.0*colmx,1.0));
