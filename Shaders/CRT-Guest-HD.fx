@@ -1252,7 +1252,8 @@ float3 v_resample(float2 tex0,float4 size)
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=LOOPSIZE);
+	}
+	while(n<=LOOPSIZE);
 	color=color/wsum;
 	color=clamp(lerp( clamp (color,cmin,cmax),color,SSRNG),0.0,1.0);
 	return color;
@@ -1834,7 +1835,8 @@ float4 HD_Pass1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=LOOPSIZE);
+	}
+	while(n<=LOOPSIZE);
 	color=color/wsum;
 	solor=solor/swum;
 	color=clamp(lerp( clamp (color,cmin,cmax),color,SSRNG),0.0,1.0);
@@ -1997,20 +1999,20 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float mscale=1.0;
 	float2 maskcoord0=maskcoord;
 	maskcoord.y=floor(maskcoord.y/masksize);
-	float mwidth1=max(mwidth+mask_zoom,2.0);
+	float mwidth0=max(mwidth+mask_zoom,2.0);
 	if( mshift> 0.25)
 	{
 	float stagg_lvl=1.0; if(frac(mshift)>0.25)stagg_lvl=2.0;
 	float next_line=float(floor(mod(maskcoord.y,2.0*stagg_lvl))<stagg_lvl);
-	maskcoord0.x=maskcoord0.x+next_line*0.5*mwidth1;
+	maskcoord0.x=maskcoord0.x+next_line*0.5*mwidth0;
 	}
 	maskcoord=maskcoord0/masksize;
 	if(!zoomed)cmask*=crt_mask(floor(maskcoord),mx,mb);else
 	{
-	mscale=mwidth1/mwidth;
-	float  mlerp= frac(maskcoord.x/mscale); if( zoom_mask>0.025 )mlerp=clamp((1.0+zoom_mask)*mlerp-0.5*zoom_mask,0.0,1.0);
-	float mcoord=floor(maskcoord.x/mscale); if(shadow_msk==13.0&&mask_zoom==-2.0)mcoord=ceil(maskcoord.x/mscale);
-	cmask*=lerp(crt_mask(float2(mcoord,maskcoord.y),mx,mb),crt_mask(float2(mcoord+1.0,maskcoord.y),mx,mb),mlerp);
+	mscale=mwidth0/mwidth;
+	float clerp= frac(maskcoord.x/mscale); if( zoom_mask>0.025 )clerp=clamp((1.0+zoom_mask)*clerp-0.5*zoom_mask,0.0,1.0);
+	float coord=floor(maskcoord.x/mscale); if(shadow_msk==13.0&&mask_zoom==-2.0)coord=ceil(maskcoord.x/mscale);
+	cmask*=lerp(crt_mask(float2(coord,maskcoord.y),mx,mb),crt_mask(float2(coord+1.0,maskcoord.y),mx,mb),clerp);
 	}
 	if(slotwidth>0.5)swidth=slotwidth;float smask=1.0;
 	float sm_offset=0.0;bool bsm_offset=(shadow_msk==1.0||shadow_msk==3.0||shadow_msk==6.0||shadow_msk==7.0||shadow_msk==9.0||shadow_msk==12.0);

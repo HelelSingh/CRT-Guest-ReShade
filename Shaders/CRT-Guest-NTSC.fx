@@ -204,7 +204,7 @@ uniform float DREDGE <
 	ui_max = 1.0;
 	ui_step = 0.01;
 	ui_label = "FSharpen - Deblur Edges Falloff";
-> = 0.89;
+> = 0.9;
 
 uniform float DSHARP <
 	ui_type = "drag";
@@ -1895,7 +1895,7 @@ float4 Signal_1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	mit=swoothstep(16.0,8.0,mit)*0.325;
 	if(MERGE>0.5)
 	{
-	float chroma_phase2=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(framecount+1.0,2.0)):0.6667*pii*(mod(pix_no.y,3.0)+mod(framecount+1.0,2.0));
+	float chroma_phase2=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(float(framecount)+1,2.)):0.6667*pii*(mod(pix_no.y,3.0)+mod(float(framecount)+1,2.));
 	float mod_phase2=chroma_phase2+pix_no.x*CHROMA_MOD_FREQ;
 	float i_mod2=cos( mod_phase2 );
 	float q_mod2=sin( mod_phase2 );
@@ -1912,7 +1912,7 @@ float4 Signal_1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	yiq2.x=dot(yiqs,mix_m[0]);
 	}
 	}
-	float chroma_phase1=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(framecount    ,2.0)):0.6667*pii*(mod(pix_no.y,3.0)+mod(framecount    ,2.0));
+	float chroma_phase1=(phase<2.5)?pii*(mod(pix_no.y,2.0)+mod(float(framecount)  ,2.)):0.6667*pii*(mod(pix_no.y,3.0)+mod(float(framecount)  ,2.));
 	float mod_phase1=chroma_phase1+pix_no.x*CHROMA_MOD_FREQ;
 	float i_mod1=cos( mod_phase1 );
 	float q_mod1=sin( mod_phase1 );
@@ -2135,10 +2135,8 @@ float4 SharpnessPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float l11=get_luma(texCD(NTSC_S02,toxcoord        ).rgb);
 	float d11=min(min(l01,l21),l11);
 	l11=max(max(l01,l21),l11);
-	float lmn=get_luma(nim);
-	float lmx=get_luma(xam);
-	float ln1=min(lerp(d11,lmn,lmn),lmn);
-	float lx1=max(lerp(lmx,l11,lmx),lmx);
+	float lmn=min(min(get_luma(c01),get_luma(c21)),get_luma(c11));float ln1=min(lerp(d11,lmn,lmn),lmn);
+	float lmx=max(max(get_luma(c01),get_luma(c21)),get_luma(c11));float lx1=max(lerp(lmx,l11,lmx),lmx);
 	float r11=get_luma(res);
 	float di1=max((r11-ln1),0.0)+0.00001;di1=pow(di1,DEBLUR);
 	float di2=max((lx1-r11),0.0)+0.00001;di2=pow(di2,DEBLUR);
@@ -2379,7 +2377,8 @@ float4 NTSC_TV1_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=color+w*pixel;
 	wsum=wsum+w;
 	n=n+1.0;
-	}while(n<=LOOPSIZE);
+	}
+	while(n<=LOOPSIZE);
 	color=color/wsum;
 	solor=solor/swum;
 	color=clamp(lerp( clamp (color,cmin,cmax),color,SSRNG),0.0,1.0);
@@ -2546,20 +2545,20 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float mscale=1.0;
 	float2 maskcoord0=maskcoord;
 	maskcoord.y=floor(maskcoord.y/masksize);
-	float mwidth1=max(mwidth+mask_zoom,2.0);
+	float mwidth0=max(mwidth+mask_zoom,2.0);
 	if( mshift> 0.25)
 	{
 	float stagg_lvl=1.0; if(frac(mshift)>0.25)stagg_lvl=2.0;
 	float next_line=float(floor(mod(maskcoord.y,2.0*stagg_lvl))<stagg_lvl);
-	maskcoord0.x=maskcoord0.x+next_line*0.5*mwidth1;
+	maskcoord0.x=maskcoord0.x+next_line*0.5*mwidth0;
 	}
 	maskcoord=maskcoord0/masksize;
 	if(!zoomed)cmask*=crt_mask(floor(maskcoord),mx,mb);else
 	{
-	mscale=mwidth1/mwidth;
-	float  mlerp= frac(maskcoord.x/mscale); if( zoom_mask>0.025 )mlerp=clamp((1.0+zoom_mask)*mlerp-0.5*zoom_mask,0.0,1.0);
-	float mcoord=floor(maskcoord.x/mscale); if(shadow_msk==13.0&&mask_zoom==-2.0)mcoord=ceil(maskcoord.x/mscale);
-	cmask*=lerp(crt_mask(float2(mcoord,maskcoord.y),mx,mb),crt_mask(float2(mcoord+1.0,maskcoord.y),mx,mb),mlerp);
+	mscale=mwidth0/mwidth;
+	float clerp= frac(maskcoord.x/mscale); if( zoom_mask>0.025 )clerp=clamp((1.0+zoom_mask)*clerp-0.5*zoom_mask,0.0,1.0);
+	float coord=floor(maskcoord.x/mscale); if(shadow_msk==13.0&&mask_zoom==-2.0)coord=ceil(maskcoord.x/mscale);
+	cmask*=lerp(crt_mask(float2(coord,maskcoord.y),mx,mb),crt_mask(float2(coord+1.0,maskcoord.y),mx,mb),clerp);
 	}
 	if(slotwidth>0.5)swidth=slotwidth;float smask=1.0;
 	float sm_offset=0.0;bool bsm_offset=(shadow_msk==1.0||shadow_msk==3.0||shadow_msk==6.0||shadow_msk==7.0||shadow_msk==9.0||shadow_msk==12.0);
